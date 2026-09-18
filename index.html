@@ -196,6 +196,7 @@
         gap: 20px;
         flex-wrap: wrap;
         margin-top: 40px;
+        margin-bottom: 40px;
       }
       .btn {
         border-radius: 8px;
@@ -1372,7 +1373,8 @@
         restoreFocusTarget(focusTarget);
       }
 
-      // Builds a text-based (selectable) PDF via jsPDF, loaded from CDN in <head>.
+      // Builds a text-based (selectable) PDF via jsPDF, loaded from CDN in <head>,
+      // styled to echo the live results page: colored text, bordered cards, and bar graphics.
       function exportResultsToPdf(a, correctCount, total, pct, byDomain) {
         if (!window.jspdf) {
           alert('PDF export could not load. Check your internet connection and try again.');
@@ -1387,6 +1389,24 @@
         const maxWidth = pageWidth - marginX * 2;
         let y = 56;
 
+        // Palette mirrors the light-theme CSS custom properties so the PDF reads like the live page.
+        const COLOR = {
+          text: [20, 22, 26],
+          muted: [107, 114, 128],
+          muted2: [154, 161, 172],
+          accent: [37, 99, 235],
+          accentSolid: [29, 78, 216],
+          accentBg: [238, 244, 255],
+          good: [22, 163, 74],
+          goodSolid: [21, 128, 61],
+          goodBg: [234, 251, 241],
+          bad: [220, 38, 38],
+          badSolid: [185, 28, 28],
+          badBg: [253, 236, 236],
+          border: [227, 229, 234],
+          borderStrong: [200, 205, 214],
+        };
+
         const ensureSpace = (needed) => {
           if (y + needed > pageHeight - marginBottom) {
             doc.addPage();
@@ -1394,31 +1414,79 @@
           }
         };
 
-        const writeLines = (text, size, opts = {}) => {
+        const setFont = (size, bold) => {
           doc.setFontSize(size);
-          doc.setFont('helvetica', opts.bold ? 'bold' : 'normal');
-          const lines = doc.splitTextToSize(String(text), maxWidth);
-          lines.forEach((line) => {
-            ensureSpace(size * 1.4);
-            doc.text(line, marginX, y);
-            y += size * 1.4;
-          });
+          doc.setFont('helvetica', bold ? 'bold' : 'normal');
         };
 
+        const measure = (text, size, width, bold) => {
+          setFont(size, bold);
+          return doc.splitTextToSize(String(text), width);
+        };
+
+        const writeLines = (text, size, opts = {}) => {
+          setFont(size, opts.bold);
+          doc.setTextColor(...(opts.color || COLOR.text));
+          const lines = doc.splitTextToSize(String(text), opts.width || maxWidth);
+          const lh = size * 1.4;
+          lines.forEach((line) => {
+            ensureSpace(lh);
+            doc.text(line, opts.x || marginX, y);
+            y += lh;
+          });
+          doc.setTextColor(...COLOR.text);
+        };
+
+        // A rounded horizontal meter bar, matching .progress-track/.domain-bar-track visuals.
+        const drawBar = (x, barY, w, h, pctValue, fillColor) => {
+          const r = h / 2;
+          doc.setFillColor(...COLOR.border);
+          doc.roundedRect(x, barY, w, h, r, r, 'F');
+          const fillW = Math.max(h, (w * Math.min(100, Math.max(0, pctValue))) / 100);
+          doc.setFillColor(...fillColor);
+          doc.roundedRect(x, barY, fillW, h, r, r, 'F');
+        };
+
+        // ---- Header ----
         writeLines('Anthropic Developer Foundation Study Quiz', 16, { bold: true });
-        writeLines(`Results \u00b7 ${new Date().toLocaleString()}`, 10);
-        y += 8;
-        writeLines(`Score: ${correctCount} / ${total} (${pct}%)`, 13, { bold: true });
+        writeLines(`Results \u00b7 ${new Date().toLocaleString()}`, 10, { color: COLOR.muted });
+        y += 10;
+
+        // ---- Score summary ----
+        writeLines('SCORE SUMMARY', 9, { bold: true, color: COLOR.muted2 });
         y += 4;
+        ensureSpace(34);
+        setFont(28, true);
+        doc.setTextColor(...COLOR.accentSolid);
+        doc.text(`${pct}%`, marginX, y + 22);
+        setFont(12, true);
+        doc.setTextColor(...COLOR.text);
+        doc.text(`${correctCount} / ${total} correct`, marginX + 90, y + 18);
+        y += 34;
+        drawBar(marginX, y, maxWidth, 8, pct, COLOR.accent);
+        y += 26;
 
         byDomain.forEach((d) => {
           const domainPct = Math.round((d.correct / d.attempted) * 100) || 0;
-          writeLines(`${d.code} \u00b7 ${d.name}: ${d.correct}/${d.attempted} (${domainPct}%)`, 10);
+          ensureSpace(30);
+          setFont(9.5, false);
+          doc.setTextColor(...COLOR.muted);
+          doc.text(`${d.code} \u00b7 ${d.name}`, marginX, y);
+          setFont(9.5, true);
+          doc.setTextColor(...COLOR.text);
+          doc.text(`${d.correct}/${d.attempted} (${domainPct}%)`, marginX + maxWidth, y, { align: 'right' });
+          y += 8;
+          drawBar(marginX, y, maxWidth, 6, domainPct, COLOR.accent);
+          y += 20;
         });
 
-        y += 12;
-        writeLines('Item-by-item review', 14, { bold: true });
-        y += 4;
+        y += 10;
+        writeLines('ITEM-BY-ITEM REVIEW', 9, { bold: true, color: COLOR.muted2 });
+        y += 6;
+
+        // ---- Review cards ----
+        const pad = 14;
+        const innerWidth = maxWidth - pad * 2;
 
         a.pool.forEach((item, idx) => {
           const domain = DOMAINS.find((dm) => dm.id === item.domain);
@@ -1427,14 +1495,76 @@
           const selectedText = selected !== null ? `${String.fromCodePoint(65 + selected)}) ${item.options[selected]}` : 'No answer';
           const correctText = `${String.fromCodePoint(65 + item.answer)}) ${item.options[item.answer]}`;
 
-          ensureSpace(60);
-          y += 6;
-          writeLines(`${idx + 1}. [${domain.code} \u00b7 ${BADGE_LABELS[item.badge]}] ${isCorrect ? 'Correct' : 'Incorrect'}`, 11, { bold: true });
-          writeLines(item.question, 11);
-          writeLines(`Your answer: ${selectedText}`, 10);
-          if (!isCorrect) writeLines(`Correct answer: ${correctText}`, 10);
-          writeLines(item.explanation, 10);
-          if (item.docsNote) writeLines(item.docsNote, 10);
+          const headLine = `${domain.code} \u00b7 ${BADGE_LABELS[item.badge]} \u00b7 item ${idx + 1}`;
+          const statusLine = isCorrect ? 'Correct' : 'Incorrect';
+          const questionLines = measure(item.question, 11.5, innerWidth, true);
+          const yourAnswerLines = measure(`Your answer: ${selectedText}`, 10, innerWidth, false);
+          const correctAnswerLines = !isCorrect ? measure(`Correct answer: ${correctText}`, 10, innerWidth, false) : [];
+          const explanationLines = measure(item.explanation, 10, innerWidth, false);
+          const docsNoteLines = item.docsNote ? measure(item.docsNote, 10, innerWidth, false) : [];
+
+          const lh11 = 11.5 * 1.4;
+          const lh10 = 10 * 1.4;
+          const cardHeight =
+            pad +
+            10 * 1.3 + 8 +
+            questionLines.length * lh11 + 8 +
+            yourAnswerLines.length * lh10 +
+            correctAnswerLines.length * lh10 +
+            (explanationLines.length ? explanationLines.length * lh10 + 6 : 0) +
+            (docsNoteLines.length ? docsNoteLines.length * lh10 + 4 : 0) +
+            pad;
+
+          // Keep a whole card together: if it can't fit on the remainder of the page, start a fresh page.
+          if (y + cardHeight > pageHeight - marginBottom && cardHeight <= pageHeight - marginBottom - 56) {
+            doc.addPage();
+            y = 56;
+          }
+
+          const cardTop = y;
+          let cy = y + pad;
+
+          setFont(8.5, true);
+          doc.setTextColor(...COLOR.muted2);
+          doc.text(headLine.toUpperCase(), marginX + pad, cy);
+          doc.setTextColor(...(isCorrect ? COLOR.goodSolid : COLOR.badSolid));
+          doc.text(statusLine, marginX + maxWidth - pad, cy, { align: 'right' });
+          cy += 8 + 8;
+
+          setFont(11.5, true);
+          doc.setTextColor(...COLOR.text);
+          questionLines.forEach((line) => { doc.text(line, marginX + pad, cy); cy += lh11; });
+          cy += 4;
+
+          setFont(10, false);
+          doc.setTextColor(...(isCorrect ? COLOR.goodSolid : COLOR.badSolid));
+          yourAnswerLines.forEach((line) => { doc.text(line, marginX + pad, cy); cy += lh10; });
+
+          if (!isCorrect) {
+            doc.setTextColor(...COLOR.goodSolid);
+            correctAnswerLines.forEach((line) => { doc.text(line, marginX + pad, cy); cy += lh10; });
+          }
+
+          if (explanationLines.length) {
+            cy += 6;
+            setFont(10, false);
+            doc.setTextColor(...COLOR.text);
+            explanationLines.forEach((line) => { doc.text(line, marginX + pad, cy); cy += lh10; });
+          }
+
+          if (docsNoteLines.length) {
+            cy += 4;
+            setFont(10, false);
+            doc.setTextColor(...COLOR.muted);
+            docsNoteLines.forEach((line) => { doc.text(line, marginX + pad, cy); cy += lh10; });
+          }
+
+          doc.setDrawColor(...COLOR.border);
+          doc.setLineWidth(1);
+          doc.roundedRect(marginX, cardTop, maxWidth, cardHeight, 6, 6, 'S');
+          doc.setTextColor(...COLOR.text);
+
+          y = cardTop + cardHeight + 10;
         });
 
         doc.save(`quiz-results-${new Date().toISOString().slice(0, 10)}.pdf`);
@@ -1490,7 +1620,13 @@
             <h1 class="title" id="resultsHeading" tabindex="-1">Attempt complete.</h1>
           </header>
 
-          <section class="section" role="region" aria-label="Score summary">
+          <nav class="start-row" aria-label="Results actions">
+            <button id="retryBtn" class="btn btn-primary" type="button">New attempt</button>
+            <button id="configBtn" class="btn btn-secondary" type="button">Change configuration</button>
+            <button id="exportPdfBtn" class="btn btn-secondary" type="button">Export as PDF</button>
+          </nav>
+
+          <section class="section" role="region" aria-label="Score summary" style="margin-bottom: 50px;">
             <h2 id="scoreSummaryHeading" class="section-label">Score summary</h2>
             <div class="score-wrap">
               <div class="score-ring" style="--pct:${pct};"><span>${pct}%</span></div>
@@ -1502,12 +1638,6 @@
             <h2 id="reviewHeading" class="section-label">Item-by-item review</h2>
             ${reviewMarkup}
           </section>
-
-          <nav class="start-row" aria-label="Results actions">
-            <button id="retryBtn" class="btn btn-primary" type="button">New attempt</button>
-            <button id="configBtn" class="btn btn-secondary" type="button">Change configuration</button>
-            <button id="exportPdfBtn" class="btn btn-secondary" type="button">Export as PDF</button>
-          </nav>
         `;
 
         document.getElementById('retryBtn').addEventListener('click', () => {
