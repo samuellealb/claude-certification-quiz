@@ -1615,6 +1615,8 @@
         if (checkBtn) checkBtn.addEventListener('click', checkAnswer);
         const clearBtn = document.getElementById('clearBtn');
         if (clearBtn) clearBtn.addEventListener('click', clearSelection);
+        const submitEarlyBtn = document.getElementById('submitEarlyBtn');
+        if (submitEarlyBtn) submitEarlyBtn.addEventListener('click', finishAttempt);
       }
 
       function renderExam() {
@@ -1662,6 +1664,7 @@
               <button id="prevBtn" class="btn btn-secondary" type="button" ${a.index === 0 ? 'disabled' : ''}>Previous</button>
               <button id="nextBtn" class="btn btn-primary" type="button">${a.index === a.pool.length - 1 ? 'Finish' : 'Next'}</button>
             </div>
+            ${a.index < a.pool.length - 1 ? `<button id="submitEarlyBtn" class="btn btn-secondary" type="button" title="Submit your exam now and view results (you have ${a.pool.length - a.index - 1} more question${a.pool.length - a.index - 1 !== 1 ? 's' : ''} remaining)">Submit early</button>` : ''}
             ${checkRowMarkup}
           </nav>
         `;
@@ -1672,7 +1675,7 @@
 
       // Builds a text-based (selectable) PDF via jsPDF, loaded from CDN in <head>,
       // styled to echo the live results page: colored text, bordered cards, and bar graphics.
-      function exportResultsToPdf(a, correctCount, total, pct, byDomain) {
+      function exportResultsToPdf(answered, correctCount, total, pct, byDomain) {
         if (!window.jspdf) {
           alert('PDF export could not load. Check your internet connection and try again.');
           return;
@@ -1785,11 +1788,10 @@
         const pad = 14;
         const innerWidth = maxWidth - pad * 2;
 
-        a.pool.forEach((item, idx) => {
+        answered.forEach(({ item, idx, selected }) => {
           const domain = DOMAINS.find((dm) => dm.id === item.domain);
-          const selected = a.answers[idx];
           const isCorrect = selected === item.answer;
-          const selectedText = selected !== null ? `${String.fromCodePoint(65 + selected)}) ${item.options[selected]}` : 'No answer';
+          const selectedText = `${String.fromCodePoint(65 + selected)}) ${item.options[selected]}`;
           const correctText = `${String.fromCodePoint(65 + item.answer)}) ${item.options[item.answer]}`;
 
           const headLine = `${domain.code} \u00b7 ${BADGE_LABELS[item.badge]} \u00b7 item ${idx + 1}`;
@@ -1869,13 +1871,17 @@
 
       function renderResults() {
         const a = state.attempt;
-        const total = a.pool.length;
-        const correctCount = a.pool.reduce((acc, item, idx) => acc + (a.answers[idx] === item.answer ? 1 : 0), 0);
+        // Unanswered items are excluded from scoring and review entirely.
+        const answered = a.pool
+          .map((item, idx) => ({ item, idx, selected: a.answers[idx] }))
+          .filter(({ selected }) => selected !== null);
+        const total = answered.length;
+        const correctCount = answered.reduce((acc, { item, selected }) => acc + (selected === item.answer ? 1 : 0), 0);
         const pct = Math.round((correctCount / total) * 100) || 0;
 
         const byDomain = DOMAINS.map((d) => {
-          const items = a.pool.map((item, idx) => ({ item, idx })).filter(({ item }) => item.domain === d.id);
-          const correct = items.reduce((acc, { item, idx }) => acc + (a.answers[idx] === item.answer ? 1 : 0), 0);
+          const items = answered.filter(({ item }) => item.domain === d.id);
+          const correct = items.reduce((acc, { item, selected }) => acc + (selected === item.answer ? 1 : 0), 0);
           return { ...d, attempted: items.length, correct };
         }).filter((d) => d.attempted > 0);
 
@@ -1890,11 +1896,10 @@
           `;
         }).join('');
 
-        const reviewMarkup = a.pool.map((item, idx) => {
+        const reviewMarkup = answered.map(({ item, idx, selected }) => {
           const domain = DOMAINS.find((d) => d.id === item.domain);
-          const selected = a.answers[idx];
           const isCorrect = selected === item.answer;
-          const selectedText = selected !== null ? `${String.fromCodePoint(65 + selected)}) ${item.options[selected]}` : 'No answer';
+          const selectedText = `${String.fromCodePoint(65 + selected)}) ${item.options[selected]}`;
           const correctText = `${String.fromCodePoint(65 + item.answer)}) ${item.options[item.answer]}`;
           return `
             <article class="review-card" aria-labelledby="reviewQuestion-${idx}">
@@ -1950,7 +1955,7 @@
         });
 
         document.getElementById('exportPdfBtn').addEventListener('click', () => {
-          exportResultsToPdf(a, correctCount, total, pct, byDomain);
+          exportResultsToPdf(answered, correctCount, total, pct, byDomain);
         });
 
         document.getElementById('resultsHeading').focus();
