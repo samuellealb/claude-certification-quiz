@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Module 5: Developer - Accelerators and IP Contribution | Claude Certification Study Material</title>
+    <style>
+      :root {
+        --bg: #fbfbfa;
+        --panel: #ffffff;
+        --border: #e3e5ea;
+        --border-strong: #c8cdd6;
+        --text: #14161a;
+        --muted: #6b7280;
+        --muted-2: #9aa1ac;
+        --accent: #2563eb;
+        --accent-bg: #eef4ff;
+        --accent-border: #93b4f5;
+        --radius: 10px;
+      }
+      :root[data-theme="dark"] {
+        --bg: #0f1115;
+        --panel: #181b21;
+        --border: #2a2e37;
+        --border-strong: #3d434f;
+        --text: #e8eaed;
+        --muted: #a7aeb8;
+        --muted-2: #7d8590;
+        --accent: #86b6ff;
+        --accent-bg: #16223d;
+        --accent-border: #4d75b8;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        min-height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+      }
+      .skip-link {
+        position: absolute;
+        left: -9999px;
+        top: 0;
+        background: var(--accent);
+        color: #fff;
+        padding: 10px 16px;
+        z-index: 100;
+        border-radius: 0 0 8px 0;
+      }
+      .skip-link:focus { left: 0; }
+      .theme-toggle {
+        position: fixed;
+        top: 16px;
+        right: 16px;
+        z-index: 50;
+        border: 1px solid var(--border-strong);
+        background: var(--panel);
+        color: var(--text);
+        border-radius: 999px;
+        padding: 8px 14px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .theme-toggle:hover { border-color: var(--accent-border); }
+      .layout {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 48px 24px 80px;
+        display: grid;
+        grid-template-columns: 240px minmax(0, 1fr);
+        gap: 40px;
+      }
+      @media (max-width: 860px) {
+        .layout { grid-template-columns: 1fr; }
+      }
+      .back-link {
+        display: inline-block;
+        margin-bottom: 20px;
+        color: var(--accent);
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .back-link:hover { text-decoration: underline; }
+      nav.toc-nav {
+        border-right: 1px solid var(--border);
+        padding-right: 24px;
+        align-self: start;
+        position: sticky;
+        top: 24px;
+      }
+      @media (max-width: 860px) {
+        nav.toc-nav { border-right: none; border-bottom: 1px solid var(--border); padding: 0 0 20px; position: static; }
+      }
+      nav.toc-nav h2 {
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted-2);
+        font-weight: 700;
+        margin: 0 0 12px;
+      }
+      ul.toc, ul.toc-sub { list-style: none; margin: 0; padding: 0; }
+      ul.toc > li { margin-bottom: 8px; }
+      ul.toc-sub { margin: 6px 0 6px 14px; }
+      ul.toc-sub > li { margin-bottom: 6px; }
+      .toc a {
+        color: var(--text);
+        text-decoration: none;
+        font-size: 0.86rem;
+        line-height: 1.4;
+      }
+      .toc-sub a { color: var(--muted); font-size: 0.82rem; }
+      .toc a:hover, .toc a:focus { color: var(--accent); text-decoration: underline; }
+      main#content h1 { font-size: clamp(1.6rem, 3vw, 2.1rem); margin: 0 0 24px; letter-spacing: -0.01em; }
+      main#content h2 { font-size: 1.35rem; margin: 40px 0 14px; border-top: 1px solid var(--border); padding-top: 28px; }
+      main#content h2:first-of-type { border-top: none; padding-top: 0; }
+      main#content h3 { font-size: 1.1rem; margin: 28px 0 10px; }
+      main#content h4 { font-size: 0.95rem; margin: 20px 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+      main#content p { line-height: 1.7; color: var(--text); margin: 0 0 16px; max-width: 74ch; }
+      main#content ul, main#content ol { line-height: 1.7; margin: 0 0 16px; padding-left: 1.4em; max-width: 74ch; }
+      main#content li { margin-bottom: 6px; }
+      main#content code { background: var(--accent-bg); border-radius: 4px; padding: 0.1em 0.4em; font-size: 0.9em; }
+      main#content pre { background: #14161a; color: #e8eaed; border-radius: var(--radius); padding: 16px; overflow-x: auto; margin: 0 0 20px; }
+      main#content pre code { background: none; padding: 0; }
+      main#content hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+      .table-wrap { overflow-x: auto; margin: 0 0 20px; border: 1px solid var(--border); border-radius: var(--radius); }
+      main#content table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+      main#content th, main#content td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+      main#content th { background: var(--accent-bg); color: var(--text); font-weight: 700; white-space: nowrap; }
+      main#content tbody tr:last-child th, main#content tbody tr:last-child td { border-bottom: none; }
+      main#content :target { scroll-margin-top: 20px; background: var(--accent-bg); }
+      .module-nav { display: flex; justify-content: space-between; gap: 16px; margin-top: 48px; border-top: 1px solid var(--border); padding-top: 20px; }
+      .module-nav a { color: var(--accent); text-decoration: none; font-size: 0.85rem; font-weight: 600; }
+      .module-nav a:hover { text-decoration: underline; }
+      .sr-only {
+        position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+        overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to content</a>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle dark mode"></button>
+    <div class="layout">
+      <nav class="toc-nav" aria-label="Table of contents">
+        <a id="backLink" class="back-link" href="index.html">&larr; Back to quiz</a>
+        <h2 id="toc-heading">On this page</h2>
+        <ul class="toc"><li><a href="#packaging-for-reuse">Packaging for Reuse</a><ul class="toc-sub"><li><a href="#packaging-a-working-build-so-the-next-engagement-starts-from-an-asset">Packaging a working build so the next engagement starts from an asset</a></li><li><a href="#what-an-accelerator-does-keep-the-reusable-parts-and-separate-out-the-rest">What an accelerator does: keep the reusable parts and separate out the rest</a></li><li><a href="#document-both-the-code-and-the-assumptions">Document both the code and the assumptions</a></li><li><a href="#bundle-the-audit-log-as-part-of-the-package">Bundle the audit log as part of the package</a></li><li><a href="#the-packaging-checklist">The packaging checklist</a></li><li><a href="#decision-guide">Decision guide</a></li></ul></li><li><a href="#contributing-back">Contributing back</a><ul class="toc-sub"><li><a href="#moving-an-asset-from-private-reuse-into-shared-infrastructure-a-maintainer-accepts">Moving an asset from private reuse into shared infrastructure a maintainer accepts</a></li><li><a href="#match-the-contribution-to-the-channel-built-for-it">Match the contribution to the channel built for it</a></li><li><a href="#rights-and-attribution-come-before-technical-review">Rights and attribution come before technical review</a></li></ul></li><li><a href="#requirements-lifecycle">Requirements & Lifecycle</a><ul class="toc-sub"><li><a href="#from-business-requirements-to-functional-and-infrastructure-requirements">From business requirements to functional and infrastructure requirements</a></li><li><a href="#systems-lifecycle-for-claude-applications">Systems lifecycle for Claude applications</a></li></ul></li><li><a href="#deployment-versioning">Deployment & Versioning</a><ul class="toc-sub"><li><a href="#choosing-where-a-claude-workload-runs-and-versioning-what-ships">Choosing where a Claude workload runs and versioning what ships</a></li><li><a href="#the-customers-cloud-usually-determines-the-platform">The customer's cloud usually determines the platform</a></li></ul></li><li><a href="#comparing-platforms">Comparing Platforms</a><ul class="toc-sub"><li><a href="#measure-latency-from-the-customers-region">Measure latency from the customer's region</a></li><li><a href="#compliance-often-determines-the-platform">Compliance often determines the platform</a></li><li><a href="#what-drives-total-cost-beyond-the-per-token-rate">What drives total cost beyond the per-token rate</a></li></ul></li><li><a href="#trust-boundaries">Trust Boundaries</a><ul class="toc-sub"><li><a href="#coordinating-several-claude-deployments-with-the-trust-boundaries-holding-under-review">Coordinating several Claude deployments with the trust boundaries holding under review</a></li><li><a href="#map-which-component-does-what-before-you-connect-them">Map which component does what before you connect them</a></li><li><a href="#the-trust-boundary-is-where-data-moves">The trust boundary is where data moves</a></li><li><a href="#least-privilege-applies-to-the-whole-application">Least privilege applies to the whole application</a></li><li><a href="#scoping-for-a-regulated-review-pulls-the-module-together">Scoping for a regulated review pulls the module together</a></li></ul></li></ul>
+      </nav>
+      <main id="content" tabindex="-1">
+        <h1 id="developer-accelerators-and-ip-contribution">Developer - Accelerators and IP Contribution</h1>
+<h2 id="packaging-for-reuse">Packaging for Reuse</h2>
+<h3 id="packaging-a-working-build-so-the-next-engagement-starts-from-an-asset">Packaging a working build so the next engagement starts from an asset</h3>
+<p>You finished the prior modules with a build that runs: an agent loop, a configured MCP server, and an eval that proves the prompt works. The most time-consuming and expensive thing on a team is the engineering time spent rebuilding the same thing for the next customer.</p>
+<h3 id="what-an-accelerator-does-keep-the-reusable-parts-and-separate-out-the-rest">What an accelerator does: keep the reusable parts and separate out the rest</h3>
+<p>An accelerator is a solution packaged so future engagements start from a working foundation rather than from a blank repository. In blueprint terms, this is packaging for reuse: separating engagement-specific code from the reusable core and parameterizing the rest. Take a working build, separate the parts that are customer-specific, and expose them as parameters with documented defaults. The asset then configures rather than gets entirely rewritten. Packaging for reuse while the build is fresh is cheaper than reconstructing the intent months later, when the person who knew why a value was hardcoded has moved on.</p>
+<p>Most reusable work falls into different asset types, and each one packages differently. Most reusable work falls into one of three categories used throughout this module: a template, a configurable server, or a portable eval. Each type holds a different kind of work and needs to be packaged in its own way. Reaching for the wrong type can make an asset look reusable while still making it difficult to apply.</p>
+<div class="table-wrap"><table><thead><tr><th>Asset type</th><th>What it bundles</th><th>What correct packaging requires</th></tr></thead><tbody><tr><td>Agent Template</td><td>The system prompt, the tool schemas, and the loop structure from a working agent.</td><td>Pull the domain-specific values into configuration with documented defaults, so a new team sets the values rather than editing the loop.</td></tr><tr><td>MCP Server Package</td><td>The tools the server exposes, with their inputs and the scope the installing team controls.</td><td>Document each tool input and let the installing team set the scope, so the server installs into a new environment without code edits.</td></tr><tr><td>Eval Suite</td><td>The graded test set and the judge rubric that prove the asset works.</td><td>Ship the dataset and rubric together so a new team can run them in their own context and confirm the asset still works there. The same eval suite also acts as the gate at deployment. When you promote a new model version to production, run it against a pinned baseline score before the version goes live.</td></tr></tbody></table></div>
+<p>Shipping an agent as a set of loose scripts instead of a template is the most common version of the wrong approach. The scripts run, so they look reusable, but every customer-specific value is buried in a different file, and the next team copies and diverges them instead of configuring one asset.</p>
+<h3 id="document-both-the-code-and-the-assumptions">Document both the code and the assumptions</h3>
+<p>Code describes behavior. Documentation covers what a future builder cannot reliably infer from reading the source: the assumptions the asset makes about its environment, the inputs it expects, the failure modes it already handles, and the eval that defines whether it still works. Without this, the next team treats the asset as a black box and rebuilds it.</p>
+<h3 id="bundle-the-audit-log-as-part-of-the-package">Bundle the audit log as part of the package</h3>
+<p>A regulated customer's reviewer asks what data the asset touches, what identity it acts under, and what log it leaves. An accelerator without these passes a demo and stalls at the first security review. Treat the audit log as part of the package.</p>
+<h3 id="the-packaging-checklist">The packaging checklist</h3>
+<p>Keep this checklist next to the build while you package it. Each column is a decision you make once per asset.</p>
+<div class="table-wrap"><table><thead><tr><th>Asset type</th><th>What to parameterize</th><th>What to document</th><th>What to bundle for audit</th></tr></thead><tbody><tr><td>Agent template</td><td>Every value that changes per customer: prompts, paths, scopes, credentials by reference, and thresholds.</td><td>Environment assumptions, expected inputs, handled failure modes, and the eval that defines working.</td><td>The data touched, the identity acted under, and the log of what the asset did.</td></tr><tr><td>MCP Server</td><td>Scopes, credentials by reference, and per-customer paths.</td><td>Expected inputs per tool, scope boundaries, and handled failure modes.</td><td>The data touched, the identity acted under, and the log of what the asset did.</td></tr><tr><td>Eval Suite</td><td>Thresholds and dataset paths that change per customer or environment.</td><td>The rubric logic, what the scores mean, and the baseline the asset is pinned to.</td><td>The data touched, the identity acted under, and the log of what the asset did.</td></tr></tbody></table></div>
+<h3 id="decision-guide">Decision guide</h3>
+<ul><li>Handles well: Parameterizing while the build is fresh turns one delivery into an asset the next engagement configures in hours.</li><li>Adds cost or complexity: Separating generalizable from customer-specific parts and documenting assumptions adds real time to the first build.</li><li>Use a different approach: For a one-off a customer will never reuse, packaging overhead is not worth it: ship the build and move on.</li></ul>
+<h2 id="contributing-back">Contributing back</h2>
+<h3 id="moving-an-asset-from-private-reuse-into-shared-infrastructure-a-maintainer-accepts">Moving an asset from private reuse into shared infrastructure a maintainer accepts</h3>
+<p>You have already done most of the work that makes an asset shareable. When you packaged it for your own team to reuse, you pulled out the parameters, wrote down the assumptions, and bundled the eval. The parameters show the asset can be configured rather than rewritten. The documented assumptions tell the maintainer what environment the asset expects. The bundled eval gives them a way to confirm it still works. An asset packaged for internal reuse is already close to what a maintainer needs to accept it.</p>
+<p>The contribution channel is designed to receive that packaged asset. It carries the version, the installation steps, and the components as a single unit, so a team that never spoke to you can install it and get the same working setup.</p>
+<h3 id="match-the-contribution-to-the-channel-built-for-it">Match the contribution to the channel built for it</h3>
+<p>Contributing back means moving an asset from private reuse to shared infrastructure through a documented channel. Each channel is built for a specific kind of contribution. The Claude Cookbook is a GitHub repository of focused reference implementations. It is designed for self-contained single- or multi-pattern implementations demonstrated clearly and working end to end. Open-source MCP servers and tools each live in their own repository with their own contribution conventions. Sending a full multi-component application to the Cookbook is a mismatch. The repository is set up to review one focused pattern rather than an entire application, so a submission that large does not fit what reviewers are looking for and will stall. The first step is matching the contribution to the channel built for it. Putting a full application where a focused example belongs is one of the most common reasons a contribution never gets reviewed.</p>
+<h4 id="what-makes-verifying-a-contribution-possible">What makes verifying a contribution possible</h4>
+<p>A maintainer accepts a contribution they can verify. The bar is set by what they need to check, not by how clever the code is. Four things make that verification possible:</p>
+<ol><li>The code does one thing. A sprawling contribution forces a reviewer to reconstruct your intent before evaluating it.</li><li>An example shows it running. A reviewer should not have to build a harness to see the behavior.</li><li>A test proves it works. A test lets a maintainer verify the result without reproducing the reasoning themselves.</li><li>A short statement names the assumptions. Otherwise, the first failure becomes the maintainer's problem.</li></ol>
+<h3 id="rights-and-attribution-come-before-technical-review">Rights and attribution come before technical review</h3>
+<p>Licensing and attribution decide whether a contribution can be accepted at all, which is why they come before the technical review. Code carried in from a customer engagement may have constraints on where it can go. Confirming you have the right to contribute it, and attributing anything you built on, is a gate the contribution must pass first. Skipping this is what turns a contribution into a problem the legal team must unwind later.</p>
+<p>The example worked here is the customer service agent case. A reusable conversation-handling pattern, built during an engagement, gets stripped of customer specifics and prepared as a general example for the Cookbook. The contribution-back motion is shared across all three roles in this curriculum. Your job as the Developer is technical readiness: the focused code, the example, the test, the assumptions, and the rights check. The engagement context comes from the broader team.</p>
+<h4 id="the-contribution-readiness-reference">The contribution-readiness reference</h4>
+<div class="table-wrap"><table><thead><tr><th>Channel</th><th>What a maintainer checks</th><th>Licensing and attribution</th><th>The example and test bar to clear</th></tr></thead><tbody><tr><td>Cookbook</td><td>For a focused example, or the tool or server's own repository for a tool or fix.</td><td>Confirm that you have the right to contribute code from an engagement, with prior work attributed.</td><td>A runnable example plus a test that proves the behavior, not just a description of it.</td></tr></tbody></table></div>
+<h4 id="handles-well">Handles well</h4>
+<p>A packaged asset needs only the example, test, and rights check to become shared infrastructure others build on.</p>
+<h4 id="adds-cost-or-complexity">Adds cost or complexity</h4>
+<p>Clearing the maintainer bar and the licensing gate is real work on top of making the code run for you.</p>
+<h4 id="use-a-different-approach">Use a different approach</h4>
+<p>When code carries an engagement licensing constraint you cannot clear, do not contribute it: escalate to the owner instead.</p>
+<h2 id="requirements-lifecycle">Requirements &amp; Lifecycle</h2>
+<h3 id="from-business-requirements-to-functional-and-infrastructure-requirements">From business requirements to functional and infrastructure requirements</h3>
+<p>The deployment-platform decisions that follow all assume the requirements already exist: the residency rule, the latency target, the identity model. This screen is where those requirements come from: turning a business problem into the functional and infrastructure requirements a deployment decision can be defended against.</p>
+<h4 id="capturing-functional-requirements-from-a-business-problem">Capturing functional requirements from a business problem</h4>
+<p>A functional requirement names what the system must do, stated with enough detail to check. A business problem (e.g. "help support agents answer faster") is not yet a requirement; the functional requirements derive from it (e.g. "classify each ticket into one of four queues; draft a reply citing the relevant policy; never auto-send without human approval"). The discipline is to write each as a checkable statement of behavior. A vague goal cannot be designed against or verified, while a specific one becomes a line in an eval and a criterion at review.</p>
+<h4 id="deriving-infrastructure-requirements">Deriving infrastructure requirements</h4>
+<p>Infrastructure requirements are the non-functional constraints the deployment must satisfy. Most of them are not stated in the business problem; instead, you derive them by asking the questions the business problem implies. Latency: how fast does a response need to be, measured where the user is? Scale: how many requests, and at what peak? Residency: where must the data be processed, and under which regulation? Identity: who acts, under what credentials, and what must be auditable? Latency, scale, residency, and identity are the infrastructure requirements that most often decide the deployment platform, and they are easiest to capture at the start, before a platform is chosen for other reasons.</p>
+<h4 id="documenting-requirements-so-a-decision-can-be-defended">Documenting requirements so a decision can be defended</h4>
+<p>Requirements are written down because the deployment decision will be reviewed by people who did not gather them. A short requirements record covering the functional behaviors, the infrastructure constraints, and the regulation each constraint comes from lets you defend a platform choice as following from the requirements rather than from familiarity. This record is the input the next screen's deployment decision reads from.</p>
+<h4 id="handles-well-2">Handles well</h4>
+<p>Turning a business problem into checkable functional and infrastructure requirements before any platform is chosen.</p>
+<h4 id="adds-cost-or-complexity-2">Adds cost or complexity</h4>
+<p>Eliciting infrastructure constraints up front takes a scoping conversation the team is tempted to skip.</p>
+<h4 id="use-a-different-approach-2">Use a different approach</h4>
+<p>For a throwaway prototype with no review and no regulated data, lightweight notes are enough.</p>
+<h3 id="systems-lifecycle-for-claude-applications">Systems lifecycle for Claude applications</h3>
+<p>The requirements you just captured are the first phase of a longer arc. This screen names that arc as the systems lifecycle, so the deployment, versioning, and boundary work in the rest of this module sits in the right phase rather than arriving as unrelated tasks.</p>
+<h4 id="the-lifecycle-phases-applied-to-a-claude-application">The lifecycle phases applied to a Claude application</h4>
+<p>A Claude application moves through the same lifecycle as any engineered system, with the model work mapped onto it:</p>
+<p>1Requirements: capture functional and infrastructure needs<br>2Design: choose the platform, the model, and the trust boundaries<br>3Build: write the agent, tools, and prompts<br>4Test: evals, unit, integration, and end-to-end checks<br>5Deploy: pin the version, gate promotion on the eval<br>6Operate: instrument cost, latency, and errors; enforce guardrails<br>7Iterate: feed production findings back into requirements<br>The phases are the same ones the earlier modules taught one at a time. Identifying them as a lifecycle is what shows how they connect.</p>
+<h4 id="gating-between-phases">Gating between phases</h4>
+<p>A gate is a decision to move from one phase to the next, and it is where a regulated engagement keeps control. You do not move from design to build until the platform satisfies the residency requirement; you do not move from deploy toward full production until the new version clears the eval against the pinned baseline. Placing engineering work in the right phase, and refusing to skip a gate, is what keeps a Claude application reviewable.</p>
+<ul><li><strong>Handles well</strong> Placing each piece of engineering work in the lifecycle phase it belongs to, with a defined artifact and gate.</li></ul>
+<ul><li><strong>Adds cost or complexity</strong></li></ul>
+<p>Gating between phases adds checkpoints a team under deadline is tempted to skip.</p>
+<ul><li><strong>Use a different approach</strong></li></ul>
+<p>A one-off experiment may collapse phases, but a regulated deployment cannot.</p>
+<h2 id="deployment-versioning">Deployment &amp; Versioning</h2>
+<h3 id="choosing-where-a-claude-workload-runs-and-versioning-what-ships">Choosing where a Claude workload runs and versioning what ships</h3>
+<p>A packaged asset and a contributed one are both merely code until something runs them. The asset now faces a different question: where it runs and how to lock its version, so an upstream change does not become an untracked change in production. That platform decision is rarely about technical merit alone. In practice, it is usually shaped by where the customer already has cloud infrastructure, identity management, and compliance agreements in place. The first question is usually about which platform the customer already trusts and operates on.</p>
+<h3 id="the-customers-cloud-usually-determines-the-platform">The customer's cloud usually determines the platform</h3>
+<p>The deployment platform is the environment where the Claude workload runs. The same model can run in several deployment environments, and the customer's existing cloud usually determines which one. The first-party Claude API is Anthropic's own environment and typically receives new features first. Claude Platform on AWS is accessed through the customer's AWS account using Anthropic's own model IDs and lifecycle; inference is Anthropic-operated, outside the AWS boundary. Amazon Bedrock offers two integrations: Claude in Amazon Bedrock uses the Messages API at /anthropic/v1/messages with broad feature parity; confirm any feature-specific requirements against the Bedrock documentation, as a features-not-supported list exists, while Claude on Amazon Bedrock (legacy) uses the InvokeModel/Converse APIs with ARN-versioned identifiers. Google Vertex AI does the same inside Google Cloud. Third-party platforms, such as Microsoft Foundry, embed Claude inside a product the customer already uses. Microsoft Foundry offers Claude in two hosting forms: Hosted on Azure (currently Claude Opus 4.8, Claude Sonnet 5, and Claude Haiku 4.5, with inference running end-to-end on Azure infrastructure, generally available) and Hosted on Anthropic (all other Foundry Claude models, with inference on Anthropic-operated infrastructure). Residency assumptions for regulated customers depend on the hosting form of the specific model. Confirm the hosting form and the current model split with Microsoft at build time.</p>
+<h4 id="identity-and-data-residency-are-important-for-security">Identity and data residency are important for security</h4>
+<p>Identity and data location are answered by the platform, not your code. Bedrock uses AWS identity and keeps data inside the customer's AWS boundary; Vertex uses Google Cloud identity and boundary. Both offer regional routing when residency is a constraint. Matching the platform to the customer's existing compliance agreement avoids a data-residency review from scratch.</p>
+<h4 id="pin-the-version-so-an-upstream-model-change-is-not-a-silent-production-change">Pin the version so an upstream model change is not a silent production change</h4>
+<p>Versioning is what keeps a model or prompt change from becoming a silent change in production. Every Claude model ID points to a specific model snapshot. Aliases such as Opus and Sonnet are convenient, but they evolve over time and may resolve to different versions across deployment platforms. A pinned full model ID resolves to a fixed snapshot. Pin the specific model version rather than the alias, so an upstream model update is a deliberate choice rather than a silent production change. Then version the prompt and the asset alongside the code. Finally, keep the prior version available so the regression can be rolled back. An unpinned deployment makes every upstream model update an untracked change to your output.</p>
+<p>The first line follows a moving alias. The second pins the snapshot.</p>
+<pre><code class="language-python"># Pre-4.6 example: a convenience alias can resolve to a new
+# version without you knowing
+model = "claude-haiku-4-5"
+
+# Pre-4.6 pinned snapshot: the version is fixed until you change this line
+model = "claude-haiku-4-5-20251001"</code></pre>
+<p>For Claude 4.6 and later, the model ID alone pins to a specific snapshot; for earlier models, the ID plus a date suffix is required. Verify the current convention at platform.claude.com at build time.</p>
+<h4 id="promote-a-version-through-the-eval">Promote a version through the eval</h4>
+<p>Gate promotion on the eval suite. Send a new version to a portion of traffic, compare against the pinned baseline, and promote or roll back on the result. This is where the eval stops being a one-time test and becomes the deployment gate.</p>
+<h4 id="the-deployment-platform-decision-table">The deployment-platform decision table</h4>
+<div class="table-wrap"><table><thead><tr><th>Platform</th><th>Identity and data model</th><th>When to choose it</th><th>How versioning is pinned</th></tr></thead><tbody><tr><td>First-party Claude API</td><td>Anthropic identity and terms.</td><td>The customer has no binding cloud or residency constraint and wants the newest capabilities.</td><td>Pin the full model ID and keep the prior snapshot.</td></tr><tr><td>Claude Platform on AWS</td><td>Anthropic identity and terms, accessed through the customer's AWS account; inference is Anthropic-operated outside the AWS boundary.</td><td>The customer is on AWS but wants Anthropic model IDs, lifecycle, and feature parity with the first-party API.</td><td>Pin using the same model ID format as the Claude API (for example, claude-opus-4-8). Lifecycle follows Anthropic's schedule. (Confirm at publish time.)</td></tr><tr><td>Claude in Amazon Bedrock</td><td>Messages API at /anthropic/v1/messages, broad feature parity with the first-party API; confirm feature-specific requirements against the Bedrock documentation. Data stays inside the customer's configured AWS boundary.</td><td>The customer is on AWS, wants broad feature parity with the first-party API (confirm feature-specific requirements), and holds a compliance posture there.</td><td>Pin the full model ID using the anthropic. prefix format. Partner retirement dates differ from Anthropic's schedule. Confirm at publish time.</td></tr><tr><td>Claude on Amazon Bedrock (legacy)</td><td>AWS identity and billing, InvokeModel/Converse APIs with ARN-versioned model identifiers.</td><td>The customer is on an existing Bedrock integration using InvokeModel or Converse and has not migrated to the Messages API.</td><td>Pin via ARN-versioned model identifiers per Bedrock's versioning controls.</td></tr><tr><td>Google Vertex AI</td><td>Google Cloud identity, Identity and Access Management (IAM), and billing, with regional or global endpoints for residency.</td><td>The customer is on Google Cloud and holds a compliance posture there.</td><td>Pin the full model ID before rollout using Vertex's model ID format. Partner retirement dates differ from Anthropic's schedule.</td></tr><tr><td>Third-party platform</td><td>The wrapping product's identity and billing model. Note: Claude in Microsoft Foundry offers two hosting forms: Hosted on Azure (currently Opus 4.8, Sonnet 5, and Haiku 4.5; inference end-to-end on Azure) and Hosted on Anthropic (all other Foundry Claude models).</td><td>The customer already runs the platform that embeds Claude.</td><td>Pin per the platform's versioning controls.</td></tr></tbody></table></div>
+<ul><li>Handles well: Matching the platform to the customer cloud and pinning the version keeps a migration reviewable and a rollback possible.</li></ul>
+<p>Adds cost or complexity<br>Pinning, retaining prior versions, and gating promotion on the eval add release-process overhead to every deployment.</p>
+<p>Use a different approach<br>For a throwaway prototype that never touches production, a moving alias is fine: pinning is for what ships.</p>
+<h2 id="comparing-platforms">Comparing Platforms</h2>
+<h3 id="measure-latency-from-the-customers-region">Measure latency from the customer's region</h3>
+<p>Latency depends on where the platform runs relative to the customer and on how access to new features is routed. A platform running in the customer's own cloud region can reduce round-trip time compared to a first-party endpoint located farther away. The trade-off is timing of access: the first-party API typically receives new capabilities before they reach other platforms. The number is only accurate when you measure it from the customer's actual region against their actual payload. A measurement from your laptop hides the round-trip penalty that appears once the workload runs where the customer is. Within Bedrock specifically, the choice between global and regional endpoints is also the primary residency control and can affect cost. You should measure from the customer's actual region against both options before committing.</p>
+<h3 id="compliance-often-determines-the-platform">Compliance often determines the platform</h3>
+<p>Compliance is often the dimension that ends the debate. A customer who already holds a certification on one cloud is unlikely to re-certify on another. Data residency is a rule that a customer's data must be processed in a specific country or region. Available compliance certifications and who can audit access differ by platform, and a regulated financial or healthcare customer treats these as pass-or-fail rather than as tradeoffs to balance. The first-party Claude API may not offer EU data residency; confirm current regional coverage at platform.claude.com, since EU-only residency typically requires Bedrock or Vertex AI; on third-party platforms such as Microsoft Foundry, hosting is per-model: Azure-hosted Foundry models run inference end-to-end on Azure infrastructure, while Anthropic-hosted Foundry models do not satisfy EU regional residency requirements. Residency must be confirmed per model and deployment with Microsoft. Raise the compliance constraint during scoping, or it surfaces at contract review after the work is done.</p>
+<h3 id="what-drives-total-cost-beyond-the-per-token-rate">What drives total cost beyond the per-token rate</h3>
+<p>Per-token rates are broadly aligned across platforms; total cost moves on egress, platform fees, and integration effort. A lower token price can cost more in total once data transfer and integration are factored in. Instrument cost per call for each platform. Confirm the current pricing pages at scoping.</p>
+<h4 id="the-cross-platform-comparison-reference">The cross-platform comparison reference</h4>
+<div class="table-wrap"><table><thead><tr><th>Dimension</th><th>How it differs by platform</th><th>How to measure it</th><th>Where each platform wins</th></tr></thead><tbody><tr><td>Latency</td><td>A platform in the customer's region shortens the round trip, while the first-party API may reach new features first.</td><td>From the customer's actual region against their actual payload.</td><td>An in-region cloud platform wins on round-trip latency, while the first-party API is advantaged on earliest feature access.</td></tr><tr><td>Compliance</td><td>Data residency, certifications, and audit controls are determined by the deployment platform.</td><td>Against the customer's existing certification and residency requirements during scoping.</td><td>The cloud platform the customer has already certified wins, because it needs no re-certification.</td></tr><tr><td>Cost</td><td>Token price, data egress, platform fees, and integration effort all vary.</td><td>Total cost per call per platform, including egress and integration, rather than token price alone.</td><td>The platform with the lowest total cost for the actual workload wins, which is not always the cheapest token.</td></tr></tbody></table></div>
+<ul><li>Handles well: Measuring all three dimensions per platform turns a placement into one a procurement team will sign off on.</li><li>Adds cost or complexity: Instrumenting latency, compliance, and cost across platforms requires real measurement work before any code ships.</li><li>Use a different approach: When the customer's compliance requirement is already pass-or-fail, skip the full comparison. That constraint determines the placement on its own.</li></ul>
+<h2 id="trust-boundaries">Trust Boundaries</h2>
+<h3 id="coordinating-several-claude-deployments-with-the-trust-boundaries-holding-under-review">Coordinating several Claude deployments with the trust boundaries holding under review</h3>
+<p>The accelerators, deployments, and tradeoffs now come together in a single application. Connecting components multiplies the places where identity, secrets, and untrusted input can cross. The discipline is to identify every boundary before connecting anything.</p>
+<h3 id="map-which-component-does-what-before-you-connect-them">Map which component does what before you connect them</h3>
+<p>A multi-component app coordinates more than one Claude capability into a single workflow. An API request might trigger a Claude Code task, which then reaches a customer system through an MCP server. Each component contributes a capability the others do not have. The challenge is that every connection between them creates a place where identity, secrets, and untrusted input can cross. Map which component does what before connecting anything.</p>
+<h3 id="the-trust-boundary-is-where-data-moves">The trust boundary is where data moves</h3>
+<p>The trust boundary is the point where data or instructions move from one deployment environment to another. It is exactly where the injection and access controls from the prior module apply. Content fetched by a Claude Code task is untrusted when it reaches the next component. The receiving component should treat it as data, rather than as instructions, following the same principle used throughout the security module. The core discipline here is to identify every seam as a boundary. Don't assume a component is trusted simply because it worked correctly on its own.</p>
+<h3 id="least-privilege-applies-to-the-whole-application">Least privilege applies to the whole application</h3>
+<p>Identity and least privilege, which means giving each component only the access its task needs and nothing more, apply to the application as a whole. Each component operates under an identity. The application is only as contained as its most privileged seam, which means a single component scoped too broadly becomes the weak point even when every other component is properly scoped. You scope each component to the least privilege its role in the workflow requires. This is what keeps a steered component from reaching beyond its intended task.</p>
+<h3 id="scoping-for-a-regulated-review-pulls-the-module-together">Scoping for a regulated review pulls the module together</h3>
+<p>A regulated review requires justifying audit logging, data-residency decisions, and permission controls across the full application. For regulated deployments, Bedrock and Vertex AI are typically the platforms that satisfy regional residency constraints. Confirm ZDR and HIPAA BAA eligibility for each component against the Anthropic Trust Center and platform.claude.com before scoping.</p>
+<h4 id="the-multi-component-integration-map">The multi-component integration map</h4>
+<div class="table-wrap"><table><thead><tr><th>Component</th><th>What it contributes</th><th>The trust boundary at its seam</th><th>The control that enforces it</th></tr></thead><tbody><tr><td>First-party API</td><td>Orchestrates the workflow and holds the entry point.</td><td>The request entering the app from outside.</td><td>Input validation and the identity the call runs under.</td></tr><tr><td>Claude Code task</td><td>Runs the agentic work and may fetch external content.</td><td>Content it fetched, which is untrusted downstream.</td><td>Treat fetched content as data at the next seam.</td></tr><tr><td>MCP server</td><td>Reaches a customer system to read or act.</td><td>The system access it holds on the app's behalf.</td><td>Scope the server to least privilege and log the access.</td></tr></tbody></table></div>
+<ul><li>Handles well: Naming every seam as a boundary and scoping each component to least privilege makes a multi-component app deployable under review.</li></ul>
+<p>Adds cost or complexity<br>Mapping seams, enforcing controls at each, and logging boundary crossings adds design and audit work to every integration.</p>
+<p>Use a different approach<br>When a seam cannot be secured, do not ship around it: escalate to a human owner.</p>
+        <div class="module-nav">
+          <a href="module-4.html">&larr; Previous module</a>
+          <span></span>
+        </div>
+      </main>
+    </div>
+    <script>
+      const THEME_KEY = 'devFoundationPractice.theme.v1';
+      function getPreferredTheme() {
+        const saved = localStorage.getItem(THEME_KEY);
+        if (saved === 'dark' || saved === 'light') return saved;
+        return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      function applyTheme(theme) {
+        document.documentElement.dataset.theme = theme;
+        localStorage.setItem(THEME_KEY, theme);
+        const btn = document.getElementById('themeToggle');
+        if (btn) btn.textContent = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
+      }
+      applyTheme(getPreferredTheme());
+      document.getElementById('themeToggle').addEventListener('click', () => {
+        const current = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+        applyTheme(current === 'dark' ? 'light' : 'dark');
+      });
+      // Arrived here from a results-page reference link: send "Back to quiz" back to those results.
+      if (new URLSearchParams(location.search).get('from') === 'results') {
+        document.getElementById('backLink').href = 'index.html?view=results';
+      }
+    </script>
+  </body>
+</html>
