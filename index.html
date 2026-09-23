@@ -380,7 +380,9 @@
       }
       .ref-link[data-ref-type="web"] .ref-badge { color: var(--accent); }
 
+      .flag-row { margin: 0 0 20px; }
       .nav-row { display: flex; justify-content: space-between; gap: 12px; }
+      .question-map-toggle-row { margin: 12px 0; }
       .exam-review { margin: 12px 0 24px; }
       .exam-review-heading { font-size: 0.85rem; color: var(--muted); margin: 0 0 10px; }
       .question-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 6px; }
@@ -1421,6 +1423,8 @@
       const state = { view: 'config', attempt: null };
       // Answer idx to focus after the next renderExam() rebuild, set by keyboard nav
       let pendingAnswerFocus = null;
+      // Whether the question map panel is expanded; a UI preference, not part of attempt data
+      let questionMapOpen = false;
 
       function buildPool() {
         let pool = ITEM_BANK.slice();
@@ -1468,8 +1472,33 @@
         return `${m}:${String(s).padStart(2, '0')}`;
       }
 
+      const START_LABELS = { examForm: 'Start exam form', hardDrill: 'Start hard drill' };
+
+      function sectionNote(show, text) {
+        return show ? `<span class="section-note">${text}</span>` : '';
+      }
+
+      function renderOptionCards(cards, groupKey, selectedKey) {
+        return cards.map((c) => `
+          <button type="button" class="option-card ${selectedKey === c.key ? 'selected' : ''}" data-group="${groupKey}" data-key="${c.key}" aria-pressed="${selectedKey === c.key}">
+            <span class="option-title">${c.title}</span>
+            <span class="option-description">${c.desc}</span>
+          </button>
+        `).join('');
+      }
+
+      function renderOptionChips(cards, groupKey, selectedKey) {
+        return cards.map((c) => `
+          <button type="button" class="option-card ${selectedKey === c.key ? 'selected' : ''}" data-group="${groupKey}" data-key="${c.key}" aria-pressed="${selectedKey === c.key}">
+            <span class="option-title">${c.code ? `${c.code}` : c.name}</span>
+            ${c.code ? `<span class="option-description">${c.name}</span>` : ''}
+          </button>
+        `).join('');
+      }
+
       function renderConfig() {
         const disabledStudyOnly = config.form === 'examForm';
+        const disabledAttr = disabledStudyOnly ? 'disabled' : '';
 
         const domainBars = [...DOMAINS].sort((a, b) => b.pct - a.pct);
         const maxPct = Math.max(...domainBars.map((d) => d.pct));
@@ -1520,23 +1549,7 @@
           { key: 'untimed', title: 'Untimed', desc: 'Counts up, no cutoff' }
         ];
 
-        const renderCards = (cards, groupKey, selectedKey) => cards.map((c) => `
-          <button type="button" class="option-card ${selectedKey === c.key ? 'selected' : ''}" data-group="${groupKey}" data-key="${c.key}" aria-pressed="${selectedKey === c.key}">
-            <span class="option-title">${c.title}</span>
-            <span class="option-description">${c.desc}</span>
-          </button>
-        `).join('');
-
-        const renderChips = (cards, groupKey, selectedKey) => cards.map((c) => `
-          <button type="button" class="option-card ${selectedKey === c.key ? 'selected' : ''}" data-group="${groupKey}" data-key="${c.key}" aria-pressed="${selectedKey === c.key}">
-            <span class="option-title">${c.code ? `${c.code}` : c.name}</span>
-            ${c.code ? `<span class="option-description">${c.name}</span>` : ''}
-          </button>
-        `).join('');
-
-        let startLabel = 'Start study set';
-        if (config.form === 'examForm') startLabel = 'Start exam form';
-        else if (config.form === 'hardDrill') startLabel = 'Start hard drill';
+        const startLabel = START_LABELS[config.form] || 'Start study set';
 
         app.innerHTML = `
           <header>
@@ -1561,49 +1574,49 @@
           <section class="section" role="region" aria-label="Form settings">
             <fieldset class="section-group">
               <legend id="formSectionHeading" class="section-label">Form</legend>
-              <div class="option-grid">${renderCards(formCards, 'form', config.form)}</div>
+              <div class="option-grid">${renderOptionCards(formCards, 'form', config.form)}</div>
             </fieldset>
           </section>
 
-          <section class="section ${disabledStudyOnly ? 'disabled' : ''}" role="region" aria-label="Domain focus settings">
-            <fieldset class="section-group" ${disabledStudyOnly ? 'disabled' : ''}>
+          <section class="section ${disabledAttr}" role="region" aria-label="Domain focus settings">
+            <fieldset class="section-group" ${disabledAttr}>
               <legend id="domainFocusSectionHeading" class="section-label">Domain focus <span class="section-note">study modes only — exam forms draw across all five domains</span></legend>
-              <div class="option-grid chips">${renderChips(domainChips, 'domainFocus', config.domainFocus)}</div>
+              <div class="option-grid chips">${renderOptionChips(domainChips, 'domainFocus', config.domainFocus)}</div>
             </fieldset>
           </section>
 
-          <section class="section ${disabledStudyOnly ? 'disabled' : ''}" role="region" aria-label="Difficulty settings">
-            <fieldset class="section-group" ${disabledStudyOnly ? 'disabled' : ''}>
+          <section class="section ${disabledAttr}" role="region" aria-label="Difficulty settings">
+            <fieldset class="section-group" ${disabledAttr}>
               <legend id="difficultySectionHeading" class="section-label">Difficulty mix</legend>
-              <div class="option-grid">${renderCards(difficultyCards, 'difficulty', config.difficulty)}</div>
+              <div class="option-grid">${renderOptionCards(difficultyCards, 'difficulty', config.difficulty)}</div>
             </fieldset>
           </section>
 
-          <section class="section ${disabledStudyOnly ? 'disabled' : ''}" role="region" aria-label="Evidentiary basis settings">
-            <fieldset class="section-group" ${disabledStudyOnly ? 'disabled' : ''}>
+          <section class="section ${disabledAttr}" role="region" aria-label="Evidentiary basis settings">
+            <fieldset class="section-group" ${disabledAttr}>
               <legend id="evidenceSectionHeading" class="section-label">Evidentiary basis</legend>
-              <div class="option-grid">${renderCards(evidentiaryCards, 'evidentiary', config.evidentiary)}</div>
+              <div class="option-grid">${renderOptionCards(evidentiaryCards, 'evidentiary', config.evidentiary)}</div>
             </fieldset>
           </section>
 
-          <section class="section ${disabledStudyOnly ? 'disabled' : ''}" role="region" aria-label="Item selection settings">
-            <fieldset class="section-group" ${disabledStudyOnly ? 'disabled' : ''}>
-              <legend id="selectionSectionHeading" class="section-label">Item selection ${disabledStudyOnly ? '<span class="section-note">exam forms are always fully random</span>' : ''}</legend>
-              <div class="option-grid">${renderCards(itemSelectionCards, 'itemSelection', config.itemSelection)}</div>
+          <section class="section ${disabledAttr}" role="region" aria-label="Item selection settings">
+            <fieldset class="section-group" ${disabledAttr}>
+              <legend id="selectionSectionHeading" class="section-label">Item selection ${sectionNote(disabledStudyOnly, 'exam forms are always fully random')}</legend>
+              <div class="option-grid">${renderOptionCards(itemSelectionCards, 'itemSelection', config.itemSelection)}</div>
             </fieldset>
           </section>
 
-          <section class="section ${disabledStudyOnly ? 'disabled' : ''}" role="region" aria-label="Feedback settings">
-            <fieldset class="section-group" ${disabledStudyOnly ? 'disabled' : ''}>
-              <legend id="feedbackSectionHeading" class="section-label">Feedback ${disabledStudyOnly ? '<span class="section-note">exam forms always hold feedback until the end</span>' : ''}</legend>
-              <div class="option-grid">${renderCards(feedbackCards, 'feedback', config.feedback)}</div>
+          <section class="section ${disabledAttr}" role="region" aria-label="Feedback settings">
+            <fieldset class="section-group" ${disabledAttr}>
+              <legend id="feedbackSectionHeading" class="section-label">Feedback ${sectionNote(disabledStudyOnly, 'exam forms always hold feedback until the end')}</legend>
+              <div class="option-grid">${renderOptionCards(feedbackCards, 'feedback', config.feedback)}</div>
             </fieldset>
           </section>
 
-          <section class="section ${disabledStudyOnly ? 'disabled' : ''}" role="region" aria-label="Clock settings">
-            <fieldset class="section-group" ${disabledStudyOnly ? 'disabled' : ''}>
-              <legend id="clockSectionHeading" class="section-label">Clock ${disabledStudyOnly ? '<span class="section-note">exam forms are always timed</span>' : ''}</legend>
-              <div class="option-grid">${renderCards(clockCards, 'clock', config.clock)}</div>
+          <section class="section ${disabledAttr}" role="region" aria-label="Clock settings">
+            <fieldset class="section-group" ${disabledAttr}>
+              <legend id="clockSectionHeading" class="section-label">Clock ${sectionNote(disabledStudyOnly, 'exam forms are always timed')}</legend>
+              <div class="option-grid">${renderOptionCards(clockCards, 'clock', config.clock)}</div>
             </fieldset>
           </section>
 
@@ -1794,6 +1807,11 @@
         saveAttempt();
       }
 
+      function toggleQuestionMap() {
+        questionMapOpen = !questionMapOpen;
+        renderExam();
+      }
+
       function requestSubmit() {
         const a = state.attempt;
         if (!a || state.view !== 'exam') return;
@@ -1974,6 +1992,8 @@
         if (submitEarlyBtn) submitEarlyBtn.addEventListener('click', requestSubmit);
         const flagBtn = document.getElementById('flagBtn');
         if (flagBtn) flagBtn.addEventListener('click', toggleFlag);
+        const questionMapToggle = document.getElementById('questionMapToggle');
+        if (questionMapToggle) questionMapToggle.addEventListener('click', toggleQuestionMap);
         app.querySelectorAll('.question-jump').forEach((button) => {
           button.addEventListener('click', () => jumpToQuestion(Number(button.dataset.index)));
         });
@@ -1997,9 +2017,11 @@
         const checkRowMarkup = renderCheckRowMarkup(manualMode, checked, selected);
         const submitEarlyMarkup = renderSubmitEarlyMarkup(a);
         const flagLabel = a.flagged[a.index] ? 'Remove flag' : 'Flag for review';
-        const flagMarkup = config.form === 'examForm' ? `<button id="flagBtn" class="btn btn-secondary" type="button" aria-pressed="${a.flagged[a.index]}">${flagLabel}</button>` : '';
-        const reviewMarkup = config.form === 'examForm' ? `
-          <section class="exam-review" aria-label="Question overview">
+        const flagMarkup = `<div class="flag-row"><button id="flagBtn" class="btn btn-secondary" type="button" aria-pressed="${a.flagged[a.index]}">${flagLabel}</button></div>`;
+        const questionMapToggleLabel = questionMapOpen ? 'Hide question map' : 'Show question map';
+        const questionMapToggleMarkup = `<button id="questionMapToggle" class="btn btn-secondary" type="button" aria-expanded="${questionMapOpen}" aria-controls="questionMapPanel">${questionMapToggleLabel}</button>`;
+        const questionMapPanelMarkup = questionMapOpen ? `
+          <section class="exam-review" id="questionMapPanel" aria-label="Question overview">
             <p class="exam-review-heading">${a.answers.filter((answer) => answer !== null).length} answered · ${a.flagged.filter(Boolean).length} flagged · ${a.pool.length - a.answers.filter((answer) => answer !== null).length} unanswered</p>
             <div class="question-grid">${a.pool.map((_, idx) => `
               <button type="button" class="question-jump ${a.answers[idx] !== null ? 'answered' : ''} ${a.flagged[idx] ? 'flagged' : ''} ${idx === a.index ? 'current' : ''}" data-index="${idx}" aria-label="Question ${idx + 1}: ${a.answers[idx] === null ? 'unanswered' : 'answered'}${a.flagged[idx] ? ', flagged' : ''}" ${idx === a.index ? 'aria-current="step"' : ''}>${idx + 1}${a.flagged[idx] ? ' *' : ''}</button>
@@ -2030,7 +2052,8 @@
             ${explanationMarkup}
           </section>
 
-          ${reviewMarkup}
+          <div class="question-map-toggle-row">${questionMapToggleMarkup}</div>
+          ${questionMapPanelMarkup}
           <nav class="nav-row" aria-label="Question navigation">
             <div class="check-row">
               <button id="prevBtn" class="btn btn-secondary" type="button" ${a.index === 0 ? 'disabled' : ''}>Previous</button>
