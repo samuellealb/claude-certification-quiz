@@ -381,6 +381,15 @@
       .ref-link[data-ref-type="web"] .ref-badge { color: var(--accent); }
 
       .nav-row { display: flex; justify-content: space-between; gap: 12px; }
+      .exam-review { margin: 12px 0 24px; }
+      .exam-review-heading { font-size: 0.85rem; color: var(--muted); margin: 0 0 10px; }
+      .question-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 6px; }
+      .question-jump { min-height: 40px; padding: 4px; border: 1px solid var(--border-strong); background: var(--panel); color: var(--text); border-radius: 6px; cursor: pointer; font: inherit; font-size: 0.8rem; }
+      .question-jump.answered { background: var(--good-bg); border-color: var(--good); }
+      .question-jump.flagged { border: 2px solid var(--accent); }
+      .question-jump.current { outline: 2px solid var(--accent-solid); outline-offset: 2px; }
+      .question-jump:focus-visible { outline: 2px solid var(--accent-solid); outline-offset: 2px; }
+      .flagged-label { color: var(--accent); font-weight: 600; }
 
       .score-wrap { display: flex; gap: 32px; flex-wrap: wrap; align-items: center; margin-bottom: 32px; }
       .score-ring {
@@ -405,6 +414,7 @@
         font-size: 1.6rem;
         font-weight: 700;
       }
+      .score-caption { font-size: 0.85rem; line-height: 1.6; color: var(--muted); }
       .domain-breakdown { display: grid; gap: 10px; flex: 1; min-width: 240px; }
       .breakdown-row { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; }
       .breakdown-row .name { width: 190px; color: var(--muted); flex-shrink: 0; }
@@ -505,7 +515,7 @@
           options: ['The model runtime executes it in Claude\'s context and appends the output', 'Your application runs the tool and returns a matching tool_result to Claude', 'The MCP client forwards it to Anthropic for execution and receives the result', 'The tool provider executes every declared tool as soon as its schema is selected', 'The SDK automatically executes every declared tool once the request is sent, without waiting for Claude to select one'],
           answer: 1,
           explanation: 'Claude only reads the schema, decides which tool fits, and asks your application to call it. Your application is responsible for execution and returning a tool_result. Some SDKs offer a Tool Runner helper that automates this loop for handlers you register, but it still runs your application code, never the model runtime.' ,
-          references: [ { type: 'local', href: 'module-1.html#the-context-window-a-fixed-budget', label: "Module 1 — The context window: a fixed budget" } ] },
+          references: [ { type: 'local', href: 'module-2.html#how-the-tool-use-loop-works', label: "Module 2 — How the tool-use loop works" } ] },
         { id: 'd1-2', domain: 'd1', difficulty: 'standard', badge: 'unbadged',
           question: 'What breaks if your application never returns a tool_result for a tool_use block?',
           options: ['Claude treats the missing result as an empty success and continues the same turn', 'The loop breaks because the pending tool_use never receives its required tool_result', 'The Messages API replays the tool call after its response timeout expires', 'Claude selects another registered tool that has a compatible input schema', 'The next user message implicitly closes the pending tool call and starts a fresh loop'],
@@ -517,37 +527,37 @@
           options: ['When the agent reports low confidence, even if the proposed action is read-only and reversible', 'When the permission mode would normally prompt, because review gates mirror the mode\'s default behavior', 'Whenever an action is difficult to undo or can affect a sensitive or protected path without review', 'Before any implementation begins, after which the approved plan serves as review for all later actions', 'Whenever the action uses more than one tool, because orchestration increases operational risk'],
           answer: 2,
           explanation: 'The gate is placed by asking what the worst outcome is if the action runs unchecked. High-cost, hard-to-undo, or sensitive-path actions need a human gate no matter what mode is active.' ,
-          references: [ { type: 'local', href: 'module-1.html#asynchronous-patterns-for-high-volume-work', label: "Module 1 — Asynchronous patterns for high-volume work" } ] },
+          references: [ { type: 'local', href: 'module-3.html#where-a-human-still-has-to-look-placing-the-review-gate-by-worst-case-cost', label: "Module 3 — Where a human still has to look: placing the review gate by worst-case cost" } ] },
         { id: 'd1-4', domain: 'd1', difficulty: 'standard', badge: 'unbadged',
           question: 'What is the default order of Claude Code\'s workflow on an unfamiliar task?',
           options: ['Plan from the request, code the proposed change, then explore only if validation fails', 'Explore the unfamiliar codebase first, form a grounded plan, and then implement the proposed change', 'Draft the implementation, inspect neighboring code, then revise the plan before validation', 'Explore and code in parallel, then document the plan after the behavior is working', 'Plan the requested behavior, explore only its target file, then code without further approval'],
           answer: 1,
           explanation: 'Claude Code explores the codebase first, proposes a plan, and only writes or executes changes once the plan is approved.' ,
-          references: [ { type: 'local', href: 'module-1.html#the-claude-model-family', label: "Module 1 — The Claude model family" }, { type: 'web', href: 'https://platform.claude.com/docs', label: "Anthropic docs (platform.claude.com)" } ] },
+          references: [ { type: 'local', href: 'module-3.html#how-claude-code-works-through-a-task-explore-plan-and-code', label: "Module 3 — How Claude Code works through a task: explore, plan, and code" } ] },
         { id: 'd1-5', domain: 'd1', difficulty: 'standard', badge: 'inferred',
           question: 'A task delegated to the built-in Explore subagent ignores a rule defined in the project\'s CLAUDE.md. What is the most likely cause?',
           options: ['Built-in subagents load CLAUDE.md only when the parent explicitly quotes the relevant section in its task', 'Explore and Plan built-in subagents skip CLAUDE.md and repository state to reduce overhead', 'All delegated agents ignore project instructions unless the rule is duplicated in managed settings', 'Explore loads CLAUDE.md but gives its built-in read-only policy higher precedence than project guidance', 'Explore reads project instructions only after its first search, so early actions can miss them'],
           answer: 1,
           explanation: 'The built-in Explore and Plan subagents intentionally skip CLAUDE.md and git status to keep research fast; project rules defined there are not in their context.' ,
-          references: [ { type: 'local', href: 'module-1.html#the-claude-model-family', label: "Module 1 — The Claude model family" }, { type: 'web', href: 'https://platform.claude.com/docs', label: "Anthropic docs (platform.claude.com)" } ] },
+          references: [ { type: 'local', href: 'module-3.html#subagents-delegating-work-to-an-isolated-context', label: "Module 3 — Subagents: delegating work to an isolated context" } ] },
         { id: 'd1-6', domain: 'd1', difficulty: 'standard', badge: 'inferred',
           question: 'In the systems lifecycle for a Claude application, which phase immediately follows Design?',
           options: ['Requirements', 'Build', 'Test', 'Deploy', 'Operate'],
           answer: 1,
           explanation: 'Choosing the platform, the model, and the trust boundaries is the Design phase. The lifecycle runs Requirements → Design → Build → Test → Deploy → Operate → Iterate, so Design is followed by Build, where the agent, tools, and prompts are written.' ,
-          references: [ { type: 'local', href: 'module-1.html#the-claude-model-family', label: "Module 1 — The Claude model family" }, { type: 'web', href: 'https://platform.claude.com/docs', label: "Anthropic docs (platform.claude.com)" } ] },
+          references: [ { type: 'local', href: 'module-5.html#systems-lifecycle-for-claude-applications', label: "Module 5 — Systems lifecycle for Claude applications" } ] },
         { id: 'd1-7', domain: 'd1', difficulty: 'standard', badge: 'unbadged',
           question: 'What is a "gate" in the systems lifecycle for a Claude application?',
           options: ['A checklist used to record phase completion after work has already moved forward', 'A decision point that must be cleared before work advances to the next phase', 'A runtime permission rule that determines whether Claude may invoke a particular tool', 'A compliance review added before deployment when regulation applies, but not during earlier phases', 'A rollback boundary that restores the preceding lifecycle phase after a failed deployment'],
           answer: 1,
           explanation: 'A gate is where a regulated engagement keeps control — for example, refusing to move from design to build until a residency requirement is satisfied.' ,
-          references: [ { type: 'local', href: 'module-1.html#the-claude-model-family', label: "Module 1 — The Claude model family" }, { type: 'web', href: 'https://platform.claude.com/docs', label: "Anthropic docs (platform.claude.com)" } ] },
+          references: [ { type: 'local', href: 'module-5.html#systems-lifecycle-for-claude-applications', label: "Module 5 — Systems lifecycle for Claude applications" } ] },
         { id: 'd1-8', domain: 'd1', difficulty: 'standard', badge: 'unbadged',
           question: 'What most often determines which deployment platform a Claude workload runs on?',
           options: ['The provider with the lowest projected token cost after prompt caching and batch discounts', 'The customer\'s existing cloud environment, identity model, residency constraints, and compliance agreements', 'The platform whose SDK best matches the application\'s programming language and framework', 'The provider with the newest model snapshot, unless a required region is unavailable there', 'The deployment target used by the reference implementation from which the workload was derived'],
           answer: 1,
           explanation: 'The deployment platform decision is usually shaped by where the customer already trusts and operates — their cloud, identity, and compliance agreements.' ,
-          references: [ { type: 'local', href: 'module-1.html#the-claude-model-family', label: "Module 1 — The Claude model family" }, { type: 'web', href: 'https://platform.claude.com/docs', label: "Anthropic docs (platform.claude.com)" } ] },
+          references: [ { type: 'local', href: 'module-5.html#the-customers-cloud-usually-determines-the-platform', label: "Module 5 — The customer's cloud usually determines the platform" } ] },
         { id: 'd1-9', domain: 'd1', difficulty: 'standard', badge: 'docsNote',
           question: 'Why pin a full model snapshot ID instead of a moving alias like "sonnet" in production?',
           options: ['A snapshot keeps token pricing fixed for the lifetime of the deployment, while aliases follow current pricing', 'It prevents an upstream model update from silently becoming an untracked change to production behavior', 'A snapshot preserves prompt-cache entries across schema changes that would invalidate an alias-based cache', 'It allows streaming and tool use to share one model identifier without separate compatibility checks', 'It guarantees the snapshot remains available in every region supported by the moving alias'],
@@ -560,19 +570,19 @@
           options: ['A deployment profile that routes difficult requests to a higher-capability model tier', 'A packaged solution that lets a future engagement start from a working foundation', 'A managed runtime that scales MCP servers and Claude API calls as one deployment unit', 'A reusable cache of prompts, tool results, and evaluation outputs shared across customer environments', 'A benchmark suite used to identify which model tier completes an engagement fastest'],
           answer: 1,
           explanation: 'An accelerator separates engagement-specific code from the reusable core and exposes the rest as documented, parameterized configuration.' ,
-          references: [ { type: 'local', href: 'module-1.html#how-a-developer-reaches-claude-sdk-versus-raw-rest', label: "Module 1 — How a developer reaches Claude: SDK versus raw REST" } ] },
+          references: [ { type: 'local', href: 'module-5.html#what-an-accelerator-does-keep-the-reusable-parts-and-separate-out-the-rest', label: "Module 5 — What an accelerator does: keep the reusable parts and separate out the rest" } ] },
         { id: 'd1-11', domain: 'd1', difficulty: 'hard', badge: 'judgment',
           question: 'A team wants to contribute an entire multi-component customer application to the Claude Cookbook. What is the most likely outcome?',
           options: ['It is accepted if customer-specific configuration is removed and every component has integration tests', 'It stalls in review because the Cookbook favors focused, reviewable patterns over full applications', 'It is redirected unchanged to a dedicated full-application section after licensing and security review', 'It is split during review into independent examples, with maintainers taking ownership of the extracted patterns', 'It is accepted as an accelerator but excluded from Cookbook navigation until independently maintained'],
           answer: 1,
           explanation: 'Matching the contribution to the channel matters: a full application is a mismatch for a repository designed around one clearly reviewable pattern.' ,
-          references: [ { type: 'local', href: 'module-1.html#the-claude-model-family', label: "Module 1 — The Claude model family" }, { type: 'web', href: 'https://platform.claude.com/docs', label: "Anthropic docs (platform.claude.com)" } ] },
+          references: [ { type: 'local', href: 'module-5.html#match-the-contribution-to-the-channel-built-for-it', label: "Module 5 — Match the contribution to the channel built for it" } ] },
         { id: 'd1-12', domain: 'd1', difficulty: 'standard', badge: 'unbadged',
           question: 'Which requirement primarily constrains the deployment infrastructure rather than defining application behavior?',
           options: ['Classify each incoming support ticket into one of four queues before drafting a response', 'Draft a reply that cites every relevant policy passage used to support its recommendations', 'Keep all workload data within the specific country required by applicable regulation', 'Require a human to approve every drafted reply before the application sends it', 'Escalate tickets with conflicting policy evidence to the designated specialist queue'],
           answer: 2,
           explanation: 'Residency — where data must be processed — is a non-functional, infrastructure constraint, distinct from the functional behaviors a feature must perform.' ,
-          references: [ { type: 'local', href: 'module-1.html#non-determinism-what-it-means-for-testing-and-evals', label: "Module 1 — Non-determinism: what it means for testing and evals" } ] },
+          references: [ { type: 'local', href: 'module-5.html#from-business-requirements-to-functional-and-infrastructure-requirements', label: "Module 5 — From business requirements to functional and infrastructure requirements" } ] },
 
         // D2 — Tool Design & MCP Integration
         { id: 'd2-1', domain: 'd2', difficulty: 'recall', badge: 'unbadged',
@@ -735,23 +745,23 @@
 
         // D4 — Prompt Engineering & Structured Output
         { id: 'd4-1', domain: 'd4', difficulty: 'standard', badge: 'unbadged',
-          question: 'Claude returns correct content but in the wrong shape — a sentence where you expected a single label. Which technique is most likely missing?',
+          question: 'A support-ticket classifier identifies the right category but replies "This looks like billing"; the downstream router accepts only BILLING, TECHNICAL, or ESCALATION. Which change should you make first?',
           options: ['Few-shot examples covering ambiguous cases near the boundaries between labels', 'An explicit output constraint defining the only permitted response form', 'A system prompt that reinforces the classifier\'s role and domain across conversation turns', 'Extended thinking so Claude can verify the category before formatting its response', 'XML tags that isolate the source text from the instruction that requests classification'],
           answer: 1,
           explanation: 'When the content is right but the shape is wrong, the prompt never specified the form, field names, or stopping point — the missing piece is an output constraint.' ,
-          references: [ { type: 'local', href: 'module-4.html#matching-the-grading-method-to-the-shape-of-the-output', label: "Module 4 — Matching the grading method to the shape of the output" } ] },
+          references: [ { type: 'local', href: 'module-2.html#system-prompts-xml-few-shot-and-output-constraints', label: "Module 2 — System prompts, XML, few-shot, and output constraints" } ] },
         { id: 'd4-2', domain: 'd4', difficulty: 'standard', badge: 'unbadged',
-          question: 'Claude answers a wider question than asked, and the scope keeps drifting as the conversation continues. What is most likely missing?',
+          question: 'A support assistant answers correctly at first, but after several turns it starts giving unrelated advice beyond the requested policy question. What should anchor its role and scope across turns?',
           options: ['XML boundaries that separate user-provided content from the task instructions on each turn', 'A specific system prompt that defines the role, scope, and behavioral contract across turns', 'A response schema that prevents Claude from returning fields outside the requested scope', 'A tool-use setting that forces each supporting lookup to finish before another one begins', 'A few-shot example showing the preferred wording for one representative answer'],
           answer: 1,
           explanation: 'Scope drift across turns points to an underspecified system prompt — the behavioral contract that should hold role, scope, and format steady.' ,
-          references: [ { type: 'local', href: 'module-4.html#prompt-caching-reusing-the-work-already-done-on-a-stable-prefix', label: "Module 4 — Prompt caching: reusing the work already done on a stable prefix" } ] },
+          references: [ { type: 'local', href: 'module-2.html#system-prompts-xml-few-shot-and-output-constraints', label: "Module 2 — System prompts, XML, few-shot, and output constraints" } ] },
         { id: 'd4-3', domain: 'd4', difficulty: 'standard', badge: 'unbadged',
-          question: 'Claude understands the task, but a prose description has not made the recurring input-output pattern precise enough to imitate. Which technique addresses this best?',
+          question: 'A ticket classifier follows the requested task but invents a different field layout on each call despite a written description of the expected record. What should you add to show the exact input-output pattern?',
           options: ['Few-shot examples showing the required input-output structure and one edge case', 'A lower temperature so the first invented structure is reproduced more consistently', 'A longer conceptual explanation of why the requested structure matters downstream', 'A shorter system prompt so the model has more context available for formatting', 'A larger max_tokens value so Claude has enough room to infer and complete the intended structure'],
           answer: 0,
           explanation: 'Claude cannot infer an exact structure from a description alone. A correct input-output example shows the shape a written instruction often fails to pin down.' ,
-          references: [ { type: 'local', href: 'module-4.html#matching-the-grading-method-to-the-shape-of-the-output', label: "Module 4 — Matching the grading method to the shape of the output" } ] },
+          references: [ { type: 'local', href: 'module-2.html#system-prompts-xml-few-shot-and-output-constraints', label: "Module 2 — System prompts, XML, few-shot, and output constraints" } ] },
         { id: 'd4-4', domain: 'd4', difficulty: 'hard', badge: 'judgment',
           question: 'A support-ticket classifier prompt has gone through five revision passes, each adding a longer paragraph describing the three categories in more detail. Simple tickets now classify correctly, but an ambiguous ticket ("I was charged but the feature also stopped working") still comes back as "billing/technical" on one run and a full explanatory sentence on the next. What is the correct next step?',
           options: ['Classify this as a scope-drift failure and write a more specific system prompt defining the classifier\'s role and boundaries more tightly', 'Diagnose this as a missing output constraint, not a scope-drift or hallucinated-structure problem, and replace the paragraphs with an exact label list, a "return only the label" instruction, and a few-shot example covering the ambiguous ticket', 'Classify this as a hallucinated-structure failure and add two more few-shot examples that demonstrate longer, fuller explanatory sentences for ambiguous cases', 'Classify this as an edge-case gap in the happy path and lower the temperature so the model reproduces its first invented phrasing more consistently on ambiguous tickets', 'Enable extended thinking so Claude reasons through the ambiguous ticket before answering, since more descriptive paragraphs have already failed to help'],
@@ -853,55 +863,55 @@
           answer: 1,
           explanation: 'The SDK already retries transient failures with backoff. Running your own retry loop on top, unaware of the SDK\'s, multiplies attempts rather than capping them.',
           docsNote: 'Doc detail named in the modules: honor the retry-after header when present — it is more precise than blind exponential backoff.' ,
-          references: [ { type: 'local', href: 'module-5.html#what-an-accelerator-does-keep-the-reusable-parts-and-separate-out-the-rest', label: "Module 5 — What an accelerator does: keep the reusable parts and separate out the rest" } ] },
-        { id: 'd5-9', domain: 'd5', difficulty: 'hard', badge: 'inferred',
+          references: [ { type: 'local', href: 'module-4.html#the-sdk-already-retries-some-failures-so-know-what-it-covers-before-you-write-your-own', label: "Module 4 — The SDK already retries some failures, so know what it covers before you write your own" } ] },
+        { id: 'd5-9', domain: 'd5', difficulty: 'hard', badge: 'unbadged',
           question: 'A team is about to build a production Claude feature and wants to decide what to write down before implementation begins. Which four decisions does a design document need to state concretely?',
           options: ['Model snapshot, SDK version, prompt template, and projected token price for the initial workload', 'Success criteria, failure handling, cost and latency limits, and the trust boundary', 'User journey, release milestones, team ownership, and the customer-facing launch date', 'System prompt, tool schemas, deployment topology, and a list of all planned implementation tasks', 'Evaluation dataset, dashboard layout, on-call rotation, and the first quarter\'s optimization roadmap'],
           answer: 1,
           explanation: 'A useful design document names what "done" looks like, how failures are handled, the cost/latency ceiling, and which inputs and actions are inside the trust boundary.' ,
-          references: [ { type: 'local', href: 'module-5.html#coordinating-several-claude-deployments-with-the-trust-boundaries-holding-under-review', label: "Module 5 — Coordinating several Claude deployments with the trust boundaries holding under review" } ] }
+          references: [ { type: 'local', href: 'module-4.html#write-the-design-document-that-states-whats-done-safe-and-affordable', label: "Module 4 — Write the design document that states what's done, safe, and affordable" } ] }
         ,{ id: 'd5-10', domain: 'd5', difficulty: 'standard', badge: 'unbadged',
           question: 'A tool fails during an agent loop. How should the application expose that failure to Claude?',
           options: ['Return an empty tool_result so Claude can infer that no matching data was found', 'Throw the exception and omit the tool_result so the SDK can restart the entire conversation', 'Return a tool_result with is_error set to true and include useful failure details', 'Convert the failure into an assistant text block before the pending tool_use is answered', 'Retry until the tool succeeds because Claude cannot reason from failed tool results'],
           answer: 2,
           explanation: 'A failed tool should return an explicit tool_result with is_error set to true. Claude can then change approach, ask for clarification, or stop instead of reasoning over an empty result.' ,
-          references: [ { type: 'local', href: 'module-5.html#what-an-accelerator-does-keep-the-reusable-parts-and-separate-out-the-rest', label: "Module 5 — What an accelerator does: keep the reusable parts and separate out the rest" } ] },
+          references: [ { type: 'local', href: 'module-4.html#tool-errors-must-come-back-to-claude-explicitly-rather-than-dropped', label: "Module 4 — Tool errors must come back to Claude explicitly rather than dropped" } ] },
         { id: 'd5-11', domain: 'd5', difficulty: 'standard', badge: 'unbadged',
           question: 'When a service returns a retry-after value with a retriable error, how should retry timing be chosen?',
           options: ['Ignore it and always use exponential backoff so every service follows one client policy', 'Retry immediately once, then apply the header only if the immediate attempt also fails', 'Use the retry-after value first and fall back to exponential backoff when it is absent', 'Add the retry-after value to the next exponential delay to create a conservative combined wait', 'Treat any response with retry-after as terminal because the service has rejected the request'],
           answer: 2,
           explanation: 'The service knows when capacity is expected to return, so retry-after is more precise than a guessed delay. Exponential backoff remains the fallback when no value is provided.' ,
-          references: [ { type: 'local', href: 'module-5.html', label: "Module 5 — Developer - Accelerators and IP Contribution" } ] },
+          references: [ { type: 'local', href: 'module-4.html#the-sdk-already-retries-some-failures-so-know-what-it-covers-before-you-write-your-own', label: "Module 4 — The SDK already retries some failures, so know what it covers before you write your own" } ] },
         { id: 'd5-12', domain: 'd5', difficulty: 'standard', badge: 'unbadged',
           question: 'A workload sends the same long system prompt and tool schema on every call, but consecutive calls in the same session can be twenty minutes apart. Under the default cache settings, what happens?',
           options: ['The cache never expires between calls, so every call after the first reads from the cache at the discounted rate', 'The five-minute default cache window expires before the next call, so each call pays the write cost again with no read benefit', 'The cache automatically extends its lifetime whenever the same account sends another request within the same day', 'The API rejects the breakpoint because twenty minutes exceeds the maximum interval allowed between cached calls', 'The cache is preserved because it is keyed to the session, not to a fixed time window'],
           answer: 1,
           explanation: 'The default cache lifetime is five minutes from the last read. A twenty-minute gap between calls exceeds that window, so the cache expires and the next call writes the prefix again instead of reading it — paying the write premium with no read discount. Setting a one-hour ttl on the breakpoint fits this exact gap.' ,
-          references: [ { type: 'local', href: 'module-5.html#what-an-accelerator-does-keep-the-reusable-parts-and-separate-out-the-rest', label: "Module 5 — What an accelerator does: keep the reusable parts and separate out the rest" } ] },
+          references: [ { type: 'local', href: 'module-4.html#prompt-caching-reusing-the-work-already-done-on-a-stable-prefix', label: "Module 4 — Prompt caching: reusing the work already done on a stable prefix" } ] },
         { id: 'd5-13', domain: 'd5', difficulty: 'standard', badge: 'unbadged',
           question: 'A streamed response includes a tool_use block. What must your code do before treating that block\'s input as complete?',
-          options: ['Parse the input_json_delta fragments as they arrive, since each one is valid JSON on its own', 'Accumulate the input_json fragments by block index and wait until the stream closes before parsing the assembled JSON', 'Wait for the first content_block_delta event only, since it always contains the full tool input in one piece', 'Call the tool as soon as content_block_start reports type "tool_use", then patch missing arguments from later deltas', 'Discard tool_use blocks from streamed responses and re-issue the request without streaming to get complete input'],
+          options: ['Parse the input_json_delta fragments as they arrive, since each one is valid JSON on its own', 'Accumulate the input_json fragments by block index and wait for content_block_stop before parsing the assembled JSON', 'Wait for the first content_block_delta event only, since it always contains the full tool input in one piece', 'Call the tool as soon as content_block_start reports type "tool_use", then patch missing arguments from later deltas', 'Discard tool_use blocks from streamed responses and re-issue the request without streaming to get complete input'],
           answer: 1,
-          explanation: 'A tool_use block\'s input arrives as a partial JSON string spread across multiple content_block_delta events and is not valid JSON until the block closes. Acting on it before then produces malformed tool inputs; the correct pattern accumulates the fragments by index and only parses once the stream has closed.' ,
-          references: [ { type: 'local', href: 'module-5.html#what-an-accelerator-does-keep-the-reusable-parts-and-separate-out-the-rest', label: "Module 5 — What an accelerator does: keep the reusable parts and separate out the rest" } ] },
-        { id: 'd5-14', domain: 'd5', difficulty: 'hard', badge: 'judgment',
+          explanation: 'A tool_use block\'s input arrives as a partial JSON string spread across multiple content_block_delta events and is not valid JSON until content_block_stop closes that block. Accumulate the fragments by index before parsing; do not call the tool while its input is partial.' ,
+          references: [ { type: 'local', href: 'module-2.html#streaming-responses-and-handling-partial-output-without-corrupting-state', label: "Module 2 — Streaming responses and handling partial output without corrupting state" } ] },
+        { id: 'd5-14', domain: 'd5', difficulty: 'hard', badge: 'unbadged',
           question: 'Some incoming queries are single-fact lookups against a stable corpus; others need several rounds of search across changing sources, and traffic is a genuine mix of both. What is the recommended way to route each query to the right retrieval strategy?',
           options: ['Always use iterative search across rounds, since it is a superset of what a single fetch can answer', 'Always use a static fetch-once index, since adding iteration only increases cost and latency', 'Use one small, cheap model call to classify the query and route it to fetch-once or iterative search', 'Let the retrieval index decide, since a well-organized index automatically shortcuts multi-part questions', 'Ask the user to pick a mode before submitting the query, since the query type is not reliably inferable'],
           answer: 2,
           explanation: 'A cheap classification call is a router: it reads the query and picks the retrieval path. The router earns its cost whenever traffic is genuinely mixed. Defaulting everything to iterative search inflates cost and latency on lookups a single fetch could answer, while defaulting everything to a static index gives shallow answers on questions that need several passes.' ,
-          references: [ { type: 'local', href: 'module-5.html#measure-latency-from-the-customers-region', label: "Module 5 — Measure latency from the customer's region" } ] },
-        { id: 'd5-15', domain: 'd5', difficulty: 'hard', badge: 'judgment',
+          references: [ { type: 'local', href: 'module-4.html#routing-between-the-two-approaches-so-you-pay-for-iteration-only-when-you-need-it', label: "Module 4 — Routing between the two approaches so you pay for iteration only when you need it" } ] },
+        { id: 'd5-15', domain: 'd5', difficulty: 'hard', badge: 'unbadged',
           question: 'An eval shows your current default model failing on the hardest cases in your production traffic, and the cost of a wrong answer on those cases is high. What does this justify, and on what basis?',
           options: ['Stepping up a model tier, using that eval score as the justification rather than a general sense that a bigger model is safer', 'Stepping down a model tier, since a failure on hard cases suggests the current model is already miscalibrated for the task', 'Rewriting the prompt with more few-shot examples first, and only reconsidering the model if that fails to close the gap', 'Switching every request in the system to the most capable available model, regardless of whether other request types were failing', 'Leaving the model choice unchanged and raising the retry budget, since retries can recover an answer the model tier got wrong'],
           answer: 0,
           explanation: 'Step up a tier when an eval shows the current model failing on the hardest cases your traffic contains and the cost of a wrong answer is high. The eval is the instrument in both directions — a model change is promoted on a measured score against your cases, not on a general impression that a larger model is inherently safer.' ,
-          references: [ { type: 'local', href: 'module-5.html#what-an-accelerator-does-keep-the-reusable-parts-and-separate-out-the-rest', label: "Module 5 — What an accelerator does: keep the reusable parts and separate out the rest" } ] },
+          references: [ { type: 'local', href: 'module-4.html#model-selection-in-production', label: "Module 4 — Model selection in production" } ] },
         { id: 'd5-16', domain: 'd5', difficulty: 'recall', badge: 'unbadged',
           question: 'What three metrics should be logged for every call to make a cost or latency problem traceable to a specific step, rather than visible only as a total on the monthly invoice?',
           options: ['Model name, prompt length, and the number of tool definitions loaded for that call', 'Input and output token usage, latency, and error rate, recorded per call', 'Total daily spend, average latency across the whole system, and the overall error count', 'Cache hit rate, retry count, and the number of concurrent sessions active at call time', 'The system prompt version, the SDK version, and the region the request was routed to'],
           answer: 1,
           explanation: 'Observability for a Claude system means instrumenting three metrics per call: input and output token usage, latency, and error rate. With those three recorded for every call, a cost or latency problem becomes a row you can sort and trace to a specific step or request type, instead of a mystery on the invoice.' ,
-          references: [ { type: 'local', href: 'module-5.html#what-drives-total-cost-beyond-the-per-token-rate', label: "Module 5 — What drives total cost beyond the per-token rate" } ] },
+          references: [ { type: 'local', href: 'module-4.html#cost-and-latency-are-invisible-in-development-but-decisive-in-production', label: "Module 4 — Cost and latency are invisible in development but decisive in production" } ] },
         { id: 'd5-17', domain: 'd5', difficulty: 'hard', badge: 'judgment',
           question: 'An application wraps all fetched web content in delimiters and instructs the model to treat everything inside them as data, never as commands. Is this sufficient to stop prompt injection?',
           options: ['Yes, because the delimiters give the model a structural marker that separates trusted from untrusted tokens', 'No — delimiters are a soft boundary the model can still be argued out of; the reliable boundary is what the agent is allowed to do, enforced through access control', 'Yes, as long as the delimited content is also passed through a profanity filter before it reaches the model', 'No, because delimiters only work for user-supplied text and have no effect on content fetched from tools', 'Yes, because model training guarantees injected instructions inside delimiters are always refused'],
@@ -921,27 +931,27 @@
           options: ["A workflow, because an agent would add behavioral complexity and context cost without adding capability", "An agent, because a registered toolset constrains its actions more tightly than branching logic does", "An agent, because enumerated steps are the easiest case for a model to sequence reliably", "A workflow, because model non-determinism makes any model call unsuitable for a step that needs a guardrail", "Either pattern, because the choice only affects cost once traffic reaches production volume"],
           answer: 0,
           explanation: "A workflow is the right call when the steps can be enumerated in code, the inputs are well constrained, and step-level guardrails matter. Reaching for an agent there adds behavioral complexity, expanded context cost, and more failure surface without adding capability. The mirrored mistake also exists: a workflow where the path cannot be enumerated breaks the first time an input falls outside the path." ,
-          references: [ { type: 'local', href: 'module-1.html#tokens-the-unit-of-input-output-and-cost', label: "Module 1 — Tokens: the unit of input, output, and cost" } ] },
+          references: [ { type: 'local', href: 'module-2.html#building-a-production-agent-the-loop-wiring-paths-orchestration-and-human-in-the-loop', label: "Module 2 — Building a production agent: the loop, wiring paths, orchestration, and human-in-the-loop" } ] },
         { id: 'd1-14', domain: 'd1', difficulty: 'standard', badge: 'docsNote',
           question: "A long-running agent workload would fit Claude Managed Agents well operationally, but the data it processes carries protected health information. What does that constraint decide?",
           options: ["Managed Agents remains available once tool results are redacted before they enter the session", "The path is ruled out, because Managed Agent sessions are stateful and stored server-side", "Managed Agents remains available provided the agent definition pins processing to a covered region", "The constraint applies to the sandbox only, so supplying your own tool runtime clears it", "Nothing changes, because the agent definition is a versioned API resource rather than stored session data"],
           answer: 1,
           explanation: "Managed Agent sessions are stateful and stored server-side, which is why they are not currently eligible for Zero Data Retention or a HIPAA Business Associate Agreement. A PHI or ZDR requirement rules the path out no matter how well it fits operationally, and the work routes to the Agent SDK or a raw loop on a covered configuration instead. The governing constraint picks the path before convenience gets a say.",
           docsNote: "Doc detail named in the modules: Managed Agents is a public beta whose endpoints require a dated beta header, and its retention and eligibility statements should be re-confirmed against Anthropic's data-retention documentation before committing." ,
-          references: [ { type: 'local', href: 'module-1.html#how-a-developer-reaches-claude-sdk-versus-raw-rest', label: "Module 1 — How a developer reaches Claude: SDK versus raw REST" } ] },
+          references: [ { type: 'local', href: 'module-2.html#building-a-production-agent-the-loop-wiring-paths-orchestration-and-human-in-the-loop', label: "Module 2 — Building a production agent: the loop, wiring paths, orchestration, and human-in-the-loop" } ] },
         { id: 'd1-15', domain: 'd1', difficulty: 'standard', badge: 'docsNote',
           question: "A skill that loads correctly in the Claude Code CLI does nothing when the same project is driven through the Agent SDK. What is the most likely cause?",
           options: ["The SDK strips skill frontmatter, so a skill has to be re-registered as a tool before it can load", "The SDK resolves skills only from an installed plugin, so a project directory is never scanned", "Whether filesystem sources such as skills and CLAUDE.md load is a configuration the SDK expects you to set", "Skills load in the SDK only while the session runs under the same permission mode as the CLI", "The SDK loads skills lazily and discards any whose description did not match the very first prompt"],
           answer: 2,
           explanation: "In the Agent SDK, whether filesystem-based configuration such as CLAUDE.md and skills loads at all is controlled by the setting-sources configuration. The common surprise is a skill that worked in Claude Code doing nothing under the SDK because that configuration was never set, so the source directory was never read. Set it explicitly to the sources you intend rather than relying on a default.",
           docsNote: "Doc detail named in the modules: the key is settingSources in TypeScript and setting_sources in Python, for example the user, project, and local sources to match CLI behavior, or an empty list to run isolated on what you pass programmatically. Confirm current default behavior against the Agent SDK reference at build time." ,
-          references: [ { type: 'local', href: 'module-1.html#sampling-why-the-same-prompt-can-give-different-answers', label: "Module 1 — Sampling: why the same prompt can give different answers" } ] },
+          references: [ { type: 'local', href: 'module-2.html#building-a-production-agent-the-loop-wiring-paths-orchestration-and-human-in-the-loop', label: "Module 2 — Building a production agent: the loop, wiring paths, orchestration, and human-in-the-loop" } ] },
         { id: 'd1-16', domain: 'd1', difficulty: 'standard', badge: 'unbadged',
           question: "An agent finishes the work it was asked to do and keeps issuing further tool calls beyond what the request needed. Which part of the loop wiring is missing?",
           options: ["A narrower system prompt, since tool selection quality is what determines when a loop terminates", "A lower retry cap, since the loop reads the remaining retry budget as its stopping criterion", "A human-in-the-loop checkpoint, which is the mechanism that ends a turn once a plan is approved", "An explicit exit condition, since the loop otherwise keeps requesting calls rather than volunteering to stop", "Parallel tool calling turned off, since concurrent calls prevent the loop from recognising completion"],
           answer: 3,
           explanation: "The agent loop runs until it receives a stop condition, so without explicit exit conditions it keeps requesting tool calls beyond what the task requires. Defining when done means done belongs in the wiring rather than being left to the model to volunteer. A scoped system prompt and a review checkpoint improve routing and oversight, but neither is a stopping criterion." ,
-          references: [ { type: 'local', href: 'module-1.html#the-context-window-a-fixed-budget', label: "Module 1 — The context window: a fixed budget" } ] },
+          references: [ { type: 'local', href: 'module-2.html#building-a-production-agent-the-loop-wiring-paths-orchestration-and-human-in-the-loop', label: "Module 2 — Building a production agent: the loop, wiring paths, orchestration, and human-in-the-loop" } ] },
         { id: 'd1-17', domain: 'd1', difficulty: 'hard', badge: 'judgment',
           question: "An agent's routing has become erratic since the team registered every tool it might eventually need. What is the recommended correction?",
           options: ["Keep the full tool set and lengthen each description until the overlaps are resolved", "Keep the full tool set but force one call per turn so a wrong choice cannot compound", "Split the tools across several subagents so each one reasons over a smaller surface", "Replace the registered tools with one general-purpose tool that accepts a free-text instruction", "Cut back to the minimum set the task requires and add tools only where a capability gap is confirmed"],
@@ -977,7 +987,7 @@
           options: ["A benchmark against comparable implementations, plus a maintainer already assigned to own it", "A migration guide for existing users, plus the engagement context the code was written for", "Integration tests for every component, plus the customer configuration the code ran against", "A description of the behavior in the submission, since a reviewer reconstructs the rest from the code", "A runnable example, a test that proves the behavior, and a short statement of the assumptions"],
           answer: 4,
           explanation: "The bar is set by what the reviewer has to check. Four things make verification possible: code that does one thing, an example that shows it running so nobody has to build a harness, a test that proves the result without reproducing the reasoning, and a short statement of the assumptions so the first failure is not the maintainer's problem. A written description of the behavior is not a substitute for a runnable example and a test." ,
-          references: [ { type: 'local', href: 'module-1.html#the-context-window-a-fixed-budget', label: "Module 1 — The context window: a fixed budget" } ] },
+          references: [ { type: 'local', href: 'module-5.html#moving-an-asset-from-private-reuse-into-shared-infrastructure-a-maintainer-accepts', label: "Module 5 — Moving an asset from private reuse into shared infrastructure a maintainer accepts" } ] },
         { id: 'd1-23', domain: 'd1', difficulty: 'hard', badge: 'judgment',
           question: "A multi-component application scopes every component tightly except one internal service that kept its original broad credentials. How should that be read?",
           options: ["As the containment level of the whole application, because it is only as contained as its most privileged seam", "As acceptable, because the broad credentials sit on an internal component rather than at the entry point", "As acceptable, because each surrounding component was verified to work correctly on its own", "As a logging gap rather than an access problem, since the seam sits inside the application boundary", "As acceptable once the component moves behind the orchestrator so no external request reaches it directly"],
@@ -1130,7 +1140,7 @@
           options: ["They declare the output schema, so the response is validated against the tagged structure", "They raise the weight of the tagged text, so it is treated as higher priority than untagged text", "They separate cached content from dynamic content, so the examples can be reused across calls", "They mark where each example ends and the next begins, so examples are not read as instructions", "They compress the examples, so a longer example set costs fewer tokens per call"],
           answer: 3,
           explanation: "Three techniques do distinct work in that prompt. The system prompt sets the output contract of exactly one label from a fixed set and nothing else, the few-shot pairs show the exact casing and format rather than describing them, and the tags mark where each example ends so Claude does not read them as part of the instruction. Validating a response against a schema is what structured outputs do, which is a separate mechanism." ,
-          references: [ { type: 'local', href: 'module-4.html#prompt-caching-reusing-the-work-already-done-on-a-stable-prefix', label: "Module 4 — Prompt caching: reusing the work already done on a stable prefix" } ] },
+          references: [ { type: 'local', href: 'module-2.html#system-prompts-xml-few-shot-and-output-constraints', label: "Module 2 — System prompts, XML, few-shot, and output constraints" } ] },
         { id: 'd4-13', domain: 'd4', difficulty: 'standard', badge: 'inferred',
           question: "A smaller model keeps missing the required output structure on a task a more capable model handles with no examples at all. What does that say about the two levers?",
           options: ["Model choice supersedes example count, so the smaller model should be dropped from consideration", "Examples help only a capable model, because a smaller model cannot generalize from a pattern", "The example set should be replaced with a longer written description, which costs fewer tokens", "Examples should be added on every call regardless, since their token cost is paid only once", "Adding examples can let the cheaper model do the job, so the two decisions are worth making together"],
@@ -1148,21 +1158,21 @@
           options: ["A more specific system prompt, since the behavioral contract was too vague to hold across turns", "A constraint naming the variant, or an example covering it, closing the gap the test inputs missed", "A rewording of the existing instructions, since the prompt already covers the case imprecisely", "A second call that re-checks the first response, since one pass cannot cover unanticipated input", "A lower sampling temperature, since variation in the input is amplified by variation in generation"],
           answer: 1,
           explanation: "Clean output on tested inputs that breaks on a variant means the prompt handles the happy path and has no rule for the case the parser breaks on. Naming the variant in the constraint, or adding an example that covers it, closes the gap the narrow test set never exposed. Scope drift across turns is the failure an underspecified system prompt produces, and rewording never supplies a missing structural piece." ,
-          references: [ { type: 'local', href: 'module-4.html#jailbreaks-and-prompt-injections-are-different-threats-yet-the-defense-has-the-same-shape', label: "Module 4 — Jailbreaks and prompt injections are different threats, yet the defense has the same shape" } ] },
+          references: [ { type: 'local', href: 'module-2.html#the-prompt-that-grew-longer-instead-of-better', label: "Module 2 — The prompt that grew longer instead of better" } ] },
         { id: 'd4-16', domain: 'd4', difficulty: 'hard', badge: 'docsNote',
           question: "One pipeline enables JSON structured outputs and sees added latency on its first call that does not recur. Another generates a fresh schema per request and pays that latency every time. What accounts for the difference?",
           options: ["The first pipeline's responses are cached, so identical outputs return without being generated", "The first pipeline's schema is small enough to validate inline, while a larger schema is compiled remotely", "The schema is compiled into a grammar before generation, and a compiled grammar is reused for a period after last use", "Structured outputs are applied after generation on the first call and during generation thereafter", "The second pipeline invalidates the prompt cache, and the latency is the prefix being reprocessed"],
           answer: 2,
           explanation: "The API compiles your schema into a grammar before it can constrain output, and that compilation adds latency on the first call for a given schema. Steady traffic on a stable schema pays the cost once, while a workload that changes schemas constantly pays it repeatedly. That is separate from the other standing cost of the feature, the injected format description that raises the input token count on every call.",
           docsNote: "Doc detail named in the modules: compiled grammars are cached for 24 hours from last use. Confirm the current window and the exact output configuration parameter shape against the documentation before shipping." ,
-          references: [ { type: 'local', href: 'module-4.html#prompt-caching-reusing-the-work-already-done-on-a-stable-prefix', label: "Module 4 — Prompt caching: reusing the work already done on a stable prefix" } ] },
+          references: [ { type: 'local', href: 'module-2.html#system-prompts-xml-few-shot-and-output-constraints', label: "Module 2 — System prompts, XML, few-shot, and output constraints" } ] },
         { id: 'd4-17', domain: 'd4', difficulty: 'standard', badge: 'docsNote',
           question: "Reasoning is enabled on a current model and the response carries a thinking block whose content is empty. What is happening?",
           options: ["The request asked for more reasoning than the model needed, so nothing was written to the block", "The block is redacted because its reasoning was encrypted for safety review before return", "The model answered without reasoning, and the empty block records that thinking was skipped", "Thinking content is omitted from responses by default, and a readable summary has to be requested", "Reasoning content appears only once the conversation contains at least one tool result"],
           answer: 3,
           explanation: "On the newest models the thinking block's content is omitted by default, so the block arrives with empty text unless summarized display is requested. That setting controls visibility only; the reasoning still happens and is billed the same either way. The block also still has to be returned to the API unchanged on the next turn of a tool-use conversation, empty content included.",
           docsNote: "Doc detail named in the modules: request summarized display when you need to show the reasoning, and confirm the current thinking defaults for your model at build time, since per-model defaults differ." ,
-          references: [ { type: 'local', href: 'module-4.html#prompt-caching-reusing-the-work-already-done-on-a-stable-prefix', label: "Module 4 — Prompt caching: reusing the work already done on a stable prefix" } ] },
+          references: [ { type: 'local', href: 'module-2.html#turning-reasoning-on-calibrating-effort-and-reading-it-back-correctly', label: "Module 2 — Turning reasoning on, calibrating effort, and reading it back correctly" } ] },
         { id: 'd4-18', domain: 'd4', difficulty: 'standard', badge: 'unbadged',
           question: "Where does enabling reasoning pay off in an agentic loop, and how should it be budgeted?",
           options: ["On every tool call, budgeted per call, because each result has to be re-reasoned before the next step", "On the final synthesis step only, because the earlier steps are mechanical tool invocations", "On the first call of each session, because that reasoning is reused across the remaining turns", "Nowhere, because a loop that reasons between calls cannot return its thinking blocks unchanged", "On the planning step, budgeted for that step, because reasoning before a plan reduces wrong-tool selection"],
@@ -1267,6 +1277,14 @@
       const TOTAL_HARD = ITEM_BANK.filter((i) => i.difficulty === 'hard').length;
       DOMAINS.forEach((d) => { d.pct = Math.round((d.count / TOTAL_ITEMS) * 100); });
 
+      const EXAM_SCENARIO_IDS = new Set([
+        'd1-5', 'd1-11', 'd1-12', 'd1-13', 'd1-14', 'd1-15', 'd1-16', 'd1-17', 'd1-18', 'd1-20', 'd1-21', 'd1-23',
+        'd2-3', 'd2-4', 'd2-6', 'd2-10', 'd2-12', 'd2-13', 'd2-15', 'd2-16', 'd2-18', 'd2-19', 'd2-21',
+        'd3-3', 'd3-8', 'd3-11', 'd3-12', 'd3-13', 'd3-17', 'd3-18', 'd3-20', 'd3-22', 'd3-23', 'd3-24', 'd3-25', 'd3-26',
+        'd4-1', 'd4-2', 'd4-3', 'd4-4', 'd4-8', 'd4-9', 'd4-13', 'd4-14', 'd4-15', 'd4-16', 'd4-17', 'd4-20', 'd4-22',
+        'd5-2', 'd5-3', 'd5-6', 'd5-9', 'd5-10', 'd5-12', 'd5-13', 'd5-14', 'd5-15', 'd5-17', 'd5-18', 'd5-20', 'd5-21', 'd5-23', 'd5-26', 'd5-28'
+      ]);
+
       const HISTORY_KEY = 'devFoundationPractice.itemHistory.v1';
 
       function loadHistory() {
@@ -1356,10 +1374,24 @@
       }
 
       function stratifiedDraw(bank, total, prioritizeHard) {
+        const quotas = DOMAINS.map((d, index) => {
+          const available = bank.filter((item) => item.domain === d.id).length;
+          const exact = d.count * total / TOTAL_ITEMS;
+          return { id: d.id, index, count: Math.floor(exact), remainder: exact % 1, available };
+        });
+        if (quotas.some((quota) => quota.count > quota.available)) throw new Error('Not enough scenario questions for the requested exam form.');
+        let remaining = total - quotas.reduce((sum, quota) => sum + quota.count, 0);
+        for (const quota of [...quotas].sort((a, b) => b.remainder - a.remainder || a.index - b.index)) {
+          if (remaining === 0) break;
+          if (quota.count < quota.available) {
+            quota.count += 1;
+            remaining -= 1;
+          }
+        }
+        if (remaining !== 0) throw new Error('Not enough questions for the requested exam form.');
         let result = [];
-        DOMAINS.forEach((d) => {
-          const share = Math.max(1, Math.round((d.count / bank.length) * total));
-          const domainItems = bank.filter((i) => i.domain === d.id);
+        quotas.forEach((quota) => {
+          const domainItems = bank.filter((item) => item.domain === quota.id);
           let ordered;
           if (prioritizeHard) {
             const hardItems = shuffle(domainItems.filter((i) => i.difficulty === 'hard'));
@@ -1368,7 +1400,7 @@
           } else {
             ordered = shuffle(domainItems);
           }
-          result = result.concat(ordered.slice(0, Math.min(share, ordered.length)));
+          result = result.concat(ordered.slice(0, quota.count));
         });
         return result;
       }
@@ -1394,7 +1426,7 @@
         let pool = ITEM_BANK.slice();
 
         if (config.form === 'examForm') {
-          pool = stratifiedDraw(ITEM_BANK, EXAM_FORM_SIZE, true);
+          pool = stratifiedDraw(ITEM_BANK.filter((item) => EXAM_SCENARIO_IDS.has(item.id)), EXAM_FORM_SIZE, true);
         } else {
           if (config.domainFocus !== 'all') {
             pool = pool.filter((i) => i.domain === config.domainFocus);
@@ -1453,7 +1485,7 @@
         `).join('');
 
         const formCards = [
-          { key: 'examForm', title: 'Exam form', desc: `${EXAM_FORM_SIZE} items · ${EXAM_FORM_MINUTES} min · stratified across all 5 domains, hard-tier items prioritized` },
+          { key: 'examForm', title: 'Exam form', desc: `${EXAM_FORM_SIZE} scenario items · ${EXAM_FORM_MINUTES} min · 1000-point grade · hard-tier items prioritized` },
           { key: 'studySet', title: 'Study set', desc: 'The largest complete five-item block matching your domain, difficulty, and evidence filters' },
           { key: 'hardDrill', title: 'Hard drill', desc: 'Hard-tier items only, topped up with standard items if a domain runs short' }
         ];
@@ -1511,7 +1543,9 @@
             <div class="eyebrow">Unofficial practice instrument · ${TOTAL_ITEMS} items · 5 study domains · ${TOTAL_HARD} hard-tier</div>
             <h1 class="title">Sit a scored mock built from your study modules.</h1>
             <p class="lede">
-              An attempt draws items from the five study domains below, weighted to match how much of the module content each one covers.
+              These five study modules reproduce official-course content; the quiz is an unofficial practice tool, not an official mock exam.
+              Use the official course and mock exams as primary preparation. The bars below show this question bank's distribution, not verified exam weights.
+              Exam forms use a 120-minute countdown and report a 0–1000 grade (1000 means 100% correct), with no implied passing threshold.
               Keys are checked against the module files in this repository. Where an item turns on a specific parameter, flag, or API constraint,
               a <strong>Docs note</strong> records the exact detail named in the modules. <strong>Unbadged</strong> means the modules state the answer
               directly. <strong>Inferred</strong> extends a documented principle to a case the modules do not directly address.
@@ -1519,8 +1553,8 @@
             </p>
           </header>
 
-          <section class="section" role="region" aria-label="Domain coverage">
-            <h2 id="domainCoverageHeading" class="section-label">Domain coverage</h2>
+          <section class="section" role="region" aria-label="Question bank distribution">
+            <h2 id="domainCoverageHeading" class="section-label">Question bank distribution</h2>
             <div class="domain-bars">${domainBarsMarkup}</div>
           </section>
 
@@ -1533,7 +1567,7 @@
 
           <section class="section ${disabledStudyOnly ? 'disabled' : ''}" role="region" aria-label="Domain focus settings">
             <fieldset class="section-group" ${disabledStudyOnly ? 'disabled' : ''}>
-              <legend id="domainFocusSectionHeading" class="section-label">Domain focus <span class="section-note">study modes only — exam forms always follow the full blueprint</span></legend>
+              <legend id="domainFocusSectionHeading" class="section-label">Domain focus <span class="section-note">study modes only — exam forms draw across all five domains</span></legend>
               <div class="option-grid chips">${renderChips(domainChips, 'domainFocus', config.domainFocus)}</div>
             </fieldset>
           </section>
@@ -1582,10 +1616,10 @@
           </section>
         `;
 
-        const examLockedGroups = ['clock', 'itemSelection', 'feedback'];
+        const examLockedGroups = new Set(['clock', 'itemSelection', 'feedback']);
         app.querySelectorAll('.option-card[data-group]').forEach((btn) => {
           btn.addEventListener('click', () => {
-            if (examLockedGroups.includes(btn.dataset.group) && config.form === 'examForm') return;
+            if (examLockedGroups.has(btn.dataset.group) && config.form === 'examForm') return;
             config[btn.dataset.group] = btn.dataset.key;
             // Exam forms are a proctored, fixed-time simulation — always timed, fully random, feedback held until the end
             if (btn.dataset.group === 'form' && config.form === 'examForm') {
@@ -1602,17 +1636,21 @@
       }
 
       function startAttempt() {
-        const rawPool = completeAnswerBlocks(buildPool());
+        const rawPool = config.form === 'examForm' ? buildPool() : completeAnswerBlocks(buildPool());
         const pool = materializeBalanced(rawPool);
 
-        const totalSeconds = config.clock === 'timed' ? pool.length * 120 : 0;
+        const startedAt = Date.now();
+        const studySeconds = config.clock === 'timed' ? pool.length * 120 : 0;
+        const totalSeconds = config.form === 'examForm' ? EXAM_FORM_MINUTES * 60 : studySeconds;
 
         state.attempt = {
           pool,
           index: 0,
           answers: new Array(pool.length).fill(null),
+          flagged: new Array(pool.length).fill(false),
           checked: new Array(pool.length).fill(false),
-          startedAt: Date.now(),
+          startedAt,
+          deadlineAt: config.form === 'examForm' ? startedAt + totalSeconds * 1000 : null,
           remainingSeconds: totalSeconds,
           elapsedSeconds: 0,
           timerId: null,
@@ -1630,10 +1668,24 @@
         return config.form !== 'examForm';
       }
 
+      function syncExamDeadline() {
+        const a = state.attempt;
+        if (!a || config.form !== 'examForm' || state.view !== 'exam') return false;
+        a.remainingSeconds = Math.max(0, Math.ceil((a.deadlineAt - Date.now()) / 1000));
+        if (a.remainingSeconds > 0) return false;
+        a.autoSubmitted = true;
+        announce('Time expired. Attempt submitted.');
+        finishAttempt();
+        return true;
+      }
+
       // Starts or stops the interval to match tab visibility; also used to resume after a reload
       function syncTimerInterval() {
         const a = state.attempt;
         if (!a || a.autoSubmitted || !(config.clock === 'timed' || config.clock === 'untimed')) return;
+        if (syncExamDeadline()) return;
+        const timerEl = document.getElementById('timerDisplay');
+        if (timerEl && config.form === 'examForm') timerEl.textContent = formatClock(a.remainingSeconds);
         // document.hidden only reflects tab switches; document.hasFocus() also catches OS-level window blur (e.g. alt-tab)
         const isBackgrounded = (document.hidden || !document.hasFocus()) && shouldPauseOnBlur();
         if (!isBackgrounded && !a.timerId) {
@@ -1652,7 +1704,9 @@
         const a = state.attempt;
         if (!a) return;
 
-        if (config.clock === 'timed') {
+        if (config.form === 'examForm') {
+          if (syncExamDeadline()) return;
+        } else if (config.clock === 'timed') {
           a.remainingSeconds -= 1;
           if (a.remainingSeconds <= 0) {
             a.remainingSeconds = 0;
@@ -1710,7 +1764,7 @@
           renderExam();
           saveAttempt();
         } else {
-          finishAttempt();
+          requestSubmit();
         }
       }
 
@@ -1724,10 +1778,37 @@
         }
       }
 
+      function toggleFlag() {
+        const a = state.attempt;
+        a.flagged[a.index] = !a.flagged[a.index];
+        renderExam();
+        saveAttempt();
+      }
+
+      function jumpToQuestion(index) {
+        const a = state.attempt;
+        if (index < 0 || index >= a.pool.length) return;
+        a.index = index;
+        renderExam();
+        document.getElementById('questionHeading').focus();
+        saveAttempt();
+      }
+
+      function requestSubmit() {
+        const a = state.attempt;
+        if (!a || state.view !== 'exam') return;
+        const unanswered = a.answers.filter((answer) => answer === null).length;
+        const flagged = a.flagged.filter(Boolean).length;
+        if (confirm(`Submit this attempt? ${unanswered} unanswered and ${flagged} flagged for review. You cannot change answers after submission.`)) finishAttempt();
+      }
+
       function finishAttempt() {
+        if (state.view !== 'exam') return;
         const a = state.attempt;
         a.pool.forEach((item, idx) => {
-          if (!a.checked[idx]) recordAnswer(item.id, a.answers[idx] === item.answer);
+          if (!a.checked[idx] && (config.form === 'examForm' || a.answers[idx] !== null)) {
+            recordAnswer(item.id, a.answers[idx] === item.answer);
+          }
         });
         if (a.timerId) clearInterval(a.timerId);
         clearSavedAttempt();
@@ -1890,7 +1971,12 @@
         const clearBtn = document.getElementById('clearBtn');
         if (clearBtn) clearBtn.addEventListener('click', clearSelection);
         const submitEarlyBtn = document.getElementById('submitEarlyBtn');
-        if (submitEarlyBtn) submitEarlyBtn.addEventListener('click', finishAttempt);
+        if (submitEarlyBtn) submitEarlyBtn.addEventListener('click', requestSubmit);
+        const flagBtn = document.getElementById('flagBtn');
+        if (flagBtn) flagBtn.addEventListener('click', toggleFlag);
+        app.querySelectorAll('.question-jump').forEach((button) => {
+          button.addEventListener('click', () => jumpToQuestion(Number(button.dataset.index)));
+        });
       }
 
       function renderExam() {
@@ -1910,6 +1996,15 @@
         const timerMarkup = renderTimerMarkup(a);
         const checkRowMarkup = renderCheckRowMarkup(manualMode, checked, selected);
         const submitEarlyMarkup = renderSubmitEarlyMarkup(a);
+        const flagLabel = a.flagged[a.index] ? 'Remove flag' : 'Flag for review';
+        const flagMarkup = config.form === 'examForm' ? `<button id="flagBtn" class="btn btn-secondary" type="button" aria-pressed="${a.flagged[a.index]}">${flagLabel}</button>` : '';
+        const reviewMarkup = config.form === 'examForm' ? `
+          <section class="exam-review" aria-label="Question overview">
+            <p class="exam-review-heading">${a.answers.filter((answer) => answer !== null).length} answered · ${a.flagged.filter(Boolean).length} flagged · ${a.pool.length - a.answers.filter((answer) => answer !== null).length} unanswered</p>
+            <div class="question-grid">${a.pool.map((_, idx) => `
+              <button type="button" class="question-jump ${a.answers[idx] !== null ? 'answered' : ''} ${a.flagged[idx] ? 'flagged' : ''} ${idx === a.index ? 'current' : ''}" data-index="${idx}" aria-label="Question ${idx + 1}: ${a.answers[idx] === null ? 'unanswered' : 'answered'}${a.flagged[idx] ? ', flagged' : ''}" ${idx === a.index ? 'aria-current="step"' : ''}>${idx + 1}${a.flagged[idx] ? ' *' : ''}</button>
+            `).join('')}</div>
+          </section>` : '';
 
         app.innerHTML = `
           <section role="region" aria-label="Question ${a.index + 1} of ${a.pool.length}">
@@ -1926,6 +2021,7 @@
             <div class="progress-track" role="progressbar" aria-valuenow="${a.index + 1}" aria-valuemin="1" aria-valuemax="${a.pool.length}" aria-valuetext="Question ${a.index + 1} of ${a.pool.length}"><div class="progress-fill" style="width:${((a.index + 1) / a.pool.length) * 100}%"></div></div>
 
             <h2 id="questionHeading" class="question-text" tabindex="-1">${item.question}</h2>
+            ${flagMarkup}
 
             <section role="region" aria-label="Answer options">
               <div class="answer-list" role="radiogroup" aria-labelledby="questionHeading">${answerRows}</div>
@@ -1934,6 +2030,7 @@
             ${explanationMarkup}
           </section>
 
+          ${reviewMarkup}
           <nav class="nav-row" aria-label="Question navigation">
             <div class="check-row">
               <button id="prevBtn" class="btn btn-secondary" type="button" ${a.index === 0 ? 'disabled' : ''}>Previous</button>
@@ -1948,9 +2045,14 @@
         restoreFocusTarget(focusTarget);
       }
 
+      function answerStatus(selected, answer) {
+        if (selected === null) return 'Unanswered';
+        return selected === answer ? 'Correct' : 'Incorrect';
+      }
+
       // Builds a text-based (selectable) PDF via jsPDF, loaded from CDN in <head>,
       // styled to echo the live results page: colored text, bordered cards, and bar graphics.
-      function exportResultsToPdf(answered, correctCount, total, pct, byDomain) {
+      function exportResultsToPdf(reviewed, correctCount, total, points, pct, byDomain) {
         if (!window.jspdf) {
           alert('PDF export could not load. Check your internet connection and try again.');
           return;
@@ -2033,10 +2135,10 @@
         ensureSpace(34);
         setFont(28, true);
         doc.setTextColor(...COLOR.accentSolid);
-        doc.text(`${pct}%`, marginX, y + 22);
+        doc.text(`${points} / 1000`, marginX, y + 22);
         setFont(12, true);
         doc.setTextColor(...COLOR.text);
-        doc.text(`${correctCount} / ${total} correct`, marginX + 90, y + 18);
+        doc.text(`${pct}% · ${correctCount} / ${total} correct`, marginX + 185, y + 18);
         y += 34;
         drawBar(marginX, y, maxWidth, 8, pct, COLOR.accent);
         y += 26;
@@ -2063,14 +2165,14 @@
         const pad = 14;
         const innerWidth = maxWidth - pad * 2;
 
-        answered.forEach(({ item, idx, selected }) => {
+        reviewed.forEach(({ item, idx, selected }) => {
           const domain = DOMAINS.find((dm) => dm.id === item.domain);
           const isCorrect = selected === item.answer;
-          const selectedText = `${String.fromCodePoint(65 + selected)}) ${item.options[selected]}`;
+          const selectedText = selected === null ? 'Unanswered' : `${String.fromCodePoint(65 + selected)}) ${item.options[selected]}`;
           const correctText = `${String.fromCodePoint(65 + item.answer)}) ${item.options[item.answer]}`;
 
-          const headLine = `${domain.code} \u00b7 ${BADGE_LABELS[item.badge]} \u00b7 item ${idx + 1}`;
-          const statusLine = isCorrect ? 'Correct' : 'Incorrect';
+          const headLine = `${domain.code} \u00b7 ${BADGE_LABELS[item.badge]} \u00b7 item ${idx + 1}${state.attempt.flagged?.[idx] ? ' \u00b7 flagged' : ''}`;
+          const statusLine = answerStatus(selected, item.answer);
           const questionLines = measure(item.question, 11.5, innerWidth, true);
           const yourAnswerLines = measure(`Your answer: ${selectedText}`, 10, innerWidth, false);
           const correctAnswerLines = !isCorrect ? measure(`Correct answer: ${correctText}`, 10, innerWidth, false) : [];
@@ -2146,16 +2248,15 @@
 
       function renderResults() {
         const a = state.attempt;
-        // Unanswered items are excluded from scoring and review entirely.
-        const answered = a.pool
-          .map((item, idx) => ({ item, idx, selected: a.answers[idx] }))
-          .filter(({ selected }) => selected !== null);
-        const total = answered.length;
-        const correctCount = answered.reduce((acc, { item, selected }) => acc + (selected === item.answer ? 1 : 0), 0);
+        const reviewed = a.pool.map((item, idx) => ({ item, idx, selected: a.answers[idx] }));
+        const graded = config.form === 'examForm' ? reviewed : reviewed.filter(({ selected }) => selected !== null);
+        const total = graded.length;
+        const correctCount = graded.reduce((acc, { item, selected }) => acc + (selected === item.answer ? 1 : 0), 0);
+        const points = total ? Math.round(correctCount / total * 1000) : 0;
         const pct = Math.round((correctCount / total) * 100) || 0;
 
         const byDomain = DOMAINS.map((d) => {
-          const items = answered.filter(({ item }) => item.domain === d.id);
+          const items = graded.filter(({ item }) => item.domain === d.id);
           const correct = items.reduce((acc, { item, selected }) => acc + (selected === item.answer ? 1 : 0), 0);
           return { ...d, attempted: items.length, correct };
         }).filter((d) => d.attempted > 0);
@@ -2171,16 +2272,17 @@
           `;
         }).join('');
 
-        const reviewMarkup = answered.map(({ item, idx, selected }) => {
+        const reviewMarkup = reviewed.map(({ item, idx, selected }) => {
           const domain = DOMAINS.find((d) => d.id === item.domain);
           const isCorrect = selected === item.answer;
-          const selectedText = `${String.fromCodePoint(65 + selected)}) ${item.options[selected]}`;
+          const selectedText = selected === null ? 'Unanswered' : `${String.fromCodePoint(65 + selected)}) ${item.options[selected]}`;
           const correctText = `${String.fromCodePoint(65 + item.answer)}) ${item.options[item.answer]}`;
+          const status = answerStatus(selected, item.answer);
           return `
             <article class="review-card" aria-labelledby="reviewQuestion-${idx}">
               <div class="review-head">
-                <span>${domain.code} · ${BADGE_LABELS[item.badge]} · item ${idx + 1}</span>
-                <span>${isCorrect ? 'Correct' : 'Incorrect'}</span>
+                <span>${domain.code} · ${BADGE_LABELS[item.badge]} · item ${idx + 1}${a.flagged?.[idx] ? ' · flagged' : ''}</span>
+                <span>${status}</span>
               </div>
               <h3 id="reviewQuestion-${idx}" class="review-question">${item.question}</h3>
               <div class="review-line ${isCorrect ? 'correct-line' : 'wrong-line'}">Your answer: ${selectedText}</div>
@@ -2207,7 +2309,8 @@
           <section class="section" role="region" aria-label="Score summary" style="margin-bottom: 50px;">
             <h2 id="scoreSummaryHeading" class="section-label">Score summary</h2>
             <div class="score-wrap">
-              <div class="score-ring" style="--pct:${pct};"><span>${pct}%</span></div>
+              <div class="score-ring" style="--pct:${pct};"><span>${points}</span></div>
+              <div class="score-caption">/ 1000 · ${pct}%<br>${correctCount} / ${total} correct</div>
               <div class="domain-breakdown">${breakdownMarkup}</div>
             </div>
           </section>
@@ -2234,11 +2337,11 @@
         });
 
         document.getElementById('exportPdfBtn').addEventListener('click', () => {
-          exportResultsToPdf(answered, correctCount, total, pct, byDomain);
+          exportResultsToPdf(reviewed, correctCount, total, points, pct, byDomain);
         });
 
         document.getElementById('resultsHeading').focus();
-        announce(`Attempt complete. You scored ${correctCount} of ${total}, ${pct}%.`);
+        announce(`Attempt complete. You scored ${points} of 1000 points, ${correctCount} of ${total} correct, ${pct}%.`);
       }
 
       // Restores an in-progress attempt from a prior session, otherwise starts at config
@@ -2247,8 +2350,17 @@
         if (!saved || !saved.attempt) return false;
         try {
           Object.assign(config, saved.config);
+          if (config.form === 'examForm' && (!Number.isFinite(saved.attempt.deadlineAt) || saved.attempt.deadlineAt <= saved.attempt.startedAt)) {
+            clearSavedAttempt();
+            state.attempt = null;
+            state.view = 'config';
+            announce('An older exam attempt cannot be resumed. Start a new exam form.');
+            return false;
+          }
           state.attempt = { ...saved.attempt, timerId: null };
+          state.attempt.flagged ||= new Array(state.attempt.pool.length).fill(false);
           state.view = 'exam';
+          if (syncExamDeadline()) return true;
           renderExam();
           syncTimerInterval();
           return true;

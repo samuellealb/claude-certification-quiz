@@ -1,0 +1,193 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import test from 'node:test';
+import { fileURLToPath } from 'node:url';
+import vm from 'node:vm';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const html = readFileSync(path.join(root, 'index.html'), 'utf8');
+const source = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].at(-1)[1];
+
+function loadQuiz() {
+  let now = 1_700_000_000_000;
+  let confirms = true;
+  let confirmationCount = 0;
+  const saved = new Map();
+  const app = {
+    innerHTML: '',
+    querySelectorAll: () => [],
+    querySelector: () => ({ addEventListener() {} }),
+  };
+  const elements = new Map([['app', app]]);
+  const document = {
+    documentElement: { dataset: {} },
+    hidden: false,
+    hasFocus: () => true,
+    addEventListener() {},
+    getElementById(id) {
+      if (!elements.has(id)) elements.set(id, {
+        addEventListener() {},
+        focus() {},
+        classList: { toggle() {} },
+        textContent: '',
+      });
+      return elements.get(id);
+    },
+  };
+  const localStorage = {
+    getItem: (key) => saved.get(key) ?? null,
+    setItem: (key, value) => saved.set(key, value),
+    removeItem: (key) => saved.delete(key),
+  };
+  const sandbox = {
+    document,
+    localStorage,
+    window: { addEventListener() {}, matchMedia: () => ({ matches: false }) },
+    location: { search: '' },
+    URLSearchParams,
+    crypto: { getRandomValues: (array) => { array[0] = 42; return array; } },
+    requestAnimationFrame: (callback) => callback(),
+    setInterval: () => 1,
+    clearInterval() {},
+    confirm: () => { confirmationCount += 1; return confirms; },
+    Date: class extends Date { static now() { return now; } },
+  };
+  vm.createContext(sandbox);
+  vm.runInContext(source, sandbox);
+  return {
+    app,
+    saved,
+    window: sandbox.window,
+    run: (expression) => vm.runInContext(expression, sandbox),
+    advance: (milliseconds) => { now += milliseconds; },
+    confirmWith: (value) => { confirms = value; },
+    confirmations: () => confirmationCount,
+  };
+}
+
+test('exam draws 60 unique scenario questions in fixed domain quotas', () => {
+  const quiz = loadQuiz();
+  quiz.run("config.form = 'examForm'");
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const pool = quiz.run('buildPool()');
+    assert.equal(pool.length, 60);
+    assert.equal(new Set(pool.map((item) => item.id)).size, 60);
+    assert.ok(pool.every((item) => quiz.run(`EXAM_SCENARIO_IDS.has(${JSON.stringify(item.id)})`)));
+    assert.deepEqual(['d1', 'd2', 'd3', 'd4', 'd5'].map((domain) => pool.filter((item) => item.domain === domain).length), [12, 10, 13, 11, 14]);
+  }
+});
+
+test('exam deadline advances while idle, expires on resume, and ignores blur', () => {
+  const quiz = loadQuiz();
+  quiz.run("config.form = 'examForm'; config.clock = 'timed'; startAttempt()");
+  assert.equal(quiz.run('state.attempt.remainingSeconds'), 7200);
+  assert.equal(quiz.run('state.attempt.deadlineAt - state.attempt.startedAt'), 7200_000);
+  quiz.advance(67 * 60_000);
+  quiz.run('tickTimer()');
+  assert.equal(quiz.run('state.attempt.remainingSeconds'), 3180);
+  quiz.advance(53 * 60_000);
+  quiz.run('syncTimerInterval()');
+  assert.equal(quiz.run('state.view'), 'results');
+  assert.equal(quiz.run('state.attempt.autoSubmitted'), true);
+  assert.equal(quiz.confirmations(), 0);
+});
+
+test('study clocks remain pausable and old exam attempts without deadlines are rejected', () => {
+  const quiz = loadQuiz();
+  quiz.run("config.form = 'studySet'; config.clock = 'timed'; startAttempt()");
+  const before = quiz.run('state.attempt.remainingSeconds');
+  assert.equal(quiz.run('state.attempt.deadlineAt'), null);
+  quiz.advance(60_000);
+  quiz.run('syncTimerInterval()');
+  assert.equal(quiz.run('state.attempt.remainingSeconds'), before);
+  quiz.run('tickTimer()');
+  assert.equal(quiz.run('state.attempt.remainingSeconds'), before - 1);
+
+  quiz.run("config.form = 'examForm'; delete state.attempt.deadlineAt; saveAttempt(); state.attempt = null");
+  assert.equal(quiz.run('resumeSavedAttempt()'), false);
+  assert.equal(quiz.run('state.view'), 'config');
+  assert.equal(quiz.saved.has('devFoundationPractice.attempt.v1'), false);
+});
+
+test('flagged questions are navigable and manual submission can be canceled', () => {
+  const quiz = loadQuiz();
+  quiz.run("config.form = 'examForm'; config.clock = 'timed'; startAttempt(); toggleFlag()");
+  assert.equal(quiz.run('state.attempt.flagged[0]'), true);
+  quiz.run('jumpToQuestion(3)');
+  assert.equal(quiz.run('state.attempt.index'), 3);
+  quiz.confirmWith(false);
+  quiz.run('requestSubmit()');
+  assert.equal(quiz.run('state.view'), 'exam');
+  quiz.confirmWith(true);
+  quiz.run('requestSubmit()');
+  assert.equal(quiz.run('state.view'), 'results');
+  assert.match(quiz.app.innerHTML, /flagged/);
+  assert.equal(quiz.confirmations(), 2);
+});
+
+test('exam skips count against 1000 points; study skips remain visible but ungraded', () => {
+  const quiz = loadQuiz();
+  quiz.run(`state.attempt = {
+    pool: ITEM_BANK.slice(0, 3), index: 0,
+    answers: [ITEM_BANK[0].answer, ITEM_BANK[1].answer, null],
+    checked: [false, false, false], flagged: [false, false, true],
+    timerId: null, autoSubmitted: false
+  }; state.view = 'results'; config.form = 'examForm'; renderResults()`);
+  assert.match(quiz.app.innerHTML, /<span>667<\/span>/);
+  assert.match(quiz.app.innerHTML, /67%/);
+  assert.match(quiz.app.innerHTML, /2 \/ 3 correct/);
+  assert.match(quiz.app.innerHTML, /Your answer: Unanswered/);
+  assert.doesNotMatch(quiz.app.innerHTML, /undefined/);
+  quiz.run("config.form = 'studySet'; renderResults()");
+  assert.match(quiz.app.innerHTML, /<span>1000<\/span>/);
+  assert.match(quiz.app.innerHTML, /2 \/ 2 correct/);
+  assert.match(quiz.app.innerHTML, /Your answer: Unanswered/);
+});
+
+test('submitting twice records each answer once', () => {
+  const quiz = loadQuiz();
+  quiz.run("config.form = 'examForm'; config.clock = 'timed'; startAttempt(); finishAttempt(); finishAttempt()");
+  const history = JSON.parse(quiz.saved.get('devFoundationPractice.itemHistory.v1'));
+  assert.equal(Object.values(history).reduce((sum, entry) => sum + entry.seen, 0), 60);
+});
+
+test('unanswered study items remain ungraded in practice history', () => {
+  const quiz = loadQuiz();
+  quiz.run(`config.form = 'studySet'; state.view = 'exam'; state.attempt = {
+    pool: ITEM_BANK.slice(0, 2), answers: [ITEM_BANK[0].answer, null],
+    checked: [false, false], flagged: [false, false], timerId: null
+  }; finishAttempt()`);
+  const history = JSON.parse(quiz.saved.get('devFoundationPractice.itemHistory.v1'));
+  assert.equal(Object.values(history).reduce((sum, entry) => sum + entry.seen, 0), 1);
+  assert.match(quiz.app.innerHTML, /Your answer: Unanswered/);
+});
+
+test('PDF exports points, percent, and unanswered items without indexing a missing answer', () => {
+  const quiz = loadQuiz();
+  const text = [];
+  let filename;
+  quiz.window.jspdf = { jsPDF: class {
+    internal = { pageSize: { getWidth: () => 612, getHeight: () => 792 } };
+    setFontSize() {}
+    setFont() {}
+    setTextColor() {}
+    setFillColor() {}
+    setDrawColor() {}
+    setLineWidth() {}
+    roundedRect() {}
+    addPage() {}
+    splitTextToSize(value) { return [value]; }
+    text(value) { text.push(value); }
+    save(value) { filename = value; }
+  } };
+  quiz.run(`state.attempt = { flagged: [true, false] }; exportResultsToPdf(
+    [{ item: ITEM_BANK[0], idx: 0, selected: ITEM_BANK[0].answer },
+     { item: ITEM_BANK[1], idx: 1, selected: null }],
+    1, 2, 500, 50, [{ ...DOMAINS[0], correct: 1, attempted: 2 }])`);
+  assert.ok(text.includes('500 / 1000'));
+  assert.ok(text.some((line) => line.includes('50%') && line.includes('1 / 2 correct')));
+  assert.ok(text.includes('Your answer: Unanswered'));
+  assert.ok(text.some((line) => line.includes('FLAGGED')));
+  assert.match(filename, /^quiz-results-\d{4}-\d{2}-\d{2}\.pdf$/);
+});
