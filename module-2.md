@@ -458,13 +458,14 @@ Agents carry coordination overhead, expanded context costs, and more surface are
 Workflow or agent: Make this decision before you write the first line
 The most critical mistake in agent development is choosing the wrong pattern at the start. Workflows and agents solve different problems: using an agent when a workflow is sufficient adds behavioral complexity without adding capability. Using a workflow when an agent is needed produces a system that breaks whenever user input deviates from the predetermined path.
 
-Choose a workflow when… Choose an agent when…
-You can enumerate the exact steps in code. You can specify the goal and the tools but not the exact path.
-Error cost is real and step-level guardrails matter. The path through work cannot be enumerated in advance.
-Observability with standard tooling is required. Non-determinism is acceptable and the agent's possible actions are constrained by its registered toolset.
-The inputs are well-constrained to a known set. User inputs vary unpredictably in content and structure.
-Every execution of the task follows the same sequence. The task requires creative sequencing of available tools.
-The agent is the pattern. The wiring path is an implementation choice.
+| Choose a workflow when… | Choose an agent when… |
+|---|---|
+| You can enumerate the exact steps in code. | You can specify the goal and the tools but not the exact path. |
+| Error cost is real and step-level guardrails matter. | The path through work cannot be enumerated in advance. |
+| Observability with standard tooling is required. | Non-determinism is acceptable and the agent's possible actions are constrained by its registered toolset. |
+| The inputs are well-constrained to a known set. | User inputs vary unpredictably in content and structure. |
+| Every execution of the task follows the same sequence. | The task requires creative sequencing of available tools. |
+| The agent is the pattern. | The wiring path is an implementation choice. |
 Once you have decided the task needs an agent, you have also decided on a pattern: a loop that calls tools, manages context, and runs until a goal is met. For single-agent systems, that pattern is constant across all three wiring paths. Multi-agent architectures, where a planner, executor, and evaluator run as separate agents handing off through structured artifacts, introduce additional design decisions beyond the loop itself. Those patterns are covered later in this track. That pattern does not change based on how you build it, what changes is how much of the loop you write yourself versus how much you hand to a library or a hosted service.
 
 There are three wiring paths, and they sit on a spectrum of how much infrastructure you own. You can write the loop directly against the Messages API, which gives you full control and full responsibility. You can use the Agent SDK, which runs the same loop inside your own process and hands you tool execution, context management, and the iteration structure already built. Or you can use Claude Managed Agents (currently in public beta), where Anthropic runs the loop and the sandbox and your application streams events in and results back. The sections that follow teach the loop itself, because the loop is what stays constant. The path you choose decides who maintains the parts around it.
@@ -472,37 +473,11 @@ There are three wiring paths, and they sit on a spectrum of how much infrastruct
 Wiring paths: who runs the loop, and what you take on
 The three paths differ in one variable: how much of the agent's runtime you own. The table is ordered from top to bottom by how much infrastructure you hand off. Choose based on your deployment and compliance constraints, don't be tempted to choose the path that is just fastest to prototype.
 
-#### Raw Messages API loop
-
-Who runs the loop: Your code runs every iteration. You send the request, read the tool-use blocks, execute the tools, and append the results yourself.
-
-What you own: The full loop, tool execution, context management, retries, and exit conditions. Nothing is provided for you.
-
-Choose this when: You need full control over each step, you have constraints a library does not accommodate, or you are teaching yourself how the loop works before adding abstraction.
-
-What to check before committing: The maintenance cost is yours. Every behavior the SDK would give you for free, including context management and parallel tool handling, becomes code you write and test.
-
-#### Agent SDK
-
-Who runs the loop: The SDK runs the loop inside your own process. It iterates and manages context, and your code still executes the tools the agent calls.
-
-What you own: Tool execution and the surrounding application. The SDK provides the loop structure, context management, and tool registration.
-
-Choose this when: You want the loop, context handling, and tool scaffolding that power Claude Code without rebuilding them, and you want the agent running in your own environment in Python or TypeScript.
-
-What to check before committing: Whether filesystem-based features like CLAUDE.md and skills load in the Agent SDK is controlled by the settingSources configuration. Do not rely on a default: always set settingSources explicitly to the sources you intend (for example, ["user", "project", "local"] to match Claude Code CLI behavior, or [] to run fully isolated with only what you pass programmatically). Confirm current default behavior against the Agent SDK reference at build time.
-
-#### Claude Managed Agents
-
-Who runs the loop: Anthropic runs the loop and the sandbox. Your application sends user events and streams results back over server-sent events.
-
-What you own: The application layer and the agent definition. You define the model, system prompt, tools, MCP servers, and skills once, then reference the agent by ID across sessions.
-
-Choose this when: You need long-running execution measured in minutes or hours, you want a managed sandbox, or you want to avoid building the loop, the sandbox, and the tool-execution layer at all. Also available on Claude Platform on AWS with some feature differences, verify capability parity against your deployment surface before committing.
-
-What to check before committing: Sessions are stateful and stored server-side, which means they are not currently eligible for Zero Data Retention or a HIPAA Business Associate Agreement. (See Anthropic API data retention documentation at platform.claude.com, verify at publish.)
-
-Currently in public beta, all endpoints require the managed-agents-2026-04-01 beta header and behaviors may be refined between releases. Build with a migration plan in place.
+| Wiring Path | Who runs the loop | What you own | Choose this when | What to check before committing |
+|---|---|---|---|---|
+| **Raw Messages API loop** | Your code runs every iteration. You send the request, read the tool-use blocks, execute the tools, and append the results yourself. | The full loop, tool execution, context management, retries, and exit conditions. Nothing is provided for you. | You need full control over each step, you have constraints a library does not accommodate, or you are teaching yourself how the loop works before adding abstraction. | The maintenance cost is yours. Every behavior the SDK would give you for free, including context management and parallel tool handling, becomes code you write and test. |
+| **Agent SDK** | The SDK runs the loop inside your own process. It iterates and manages context, and your code still executes the tools the agent calls. | Tool execution and the surrounding application. The SDK provides the loop structure, context management, and tool registration. | You want the loop, context handling, and tool scaffolding that power Claude Code without rebuilding them, and you want the agent running in your own environment in Python or TypeScript. | Whether filesystem-based features like CLAUDE.md and skills load in the Agent SDK is controlled by the settingSources configuration. Do not rely on a default: always set settingSources explicitly to the sources you intend (for example, ["user", "project", "local"] to match Claude Code CLI behavior, or [] to run fully isolated with only what you pass programmatically). Confirm current default behavior against the Agent SDK reference at build time. |
+| **Claude Managed Agents** | Anthropic runs the loop and the sandbox. Your application sends user events and streams results back over server-sent events. | The application layer and the agent definition. You define the model, system prompt, tools, MCP servers, and skills once, then reference the agent by ID across sessions. | You need long-running execution measured in minutes or hours, you want a managed sandbox, or you want to avoid building the loop, the sandbox, and the tool-execution layer at all. Also available on Claude Platform on AWS with some feature differences, verify capability parity against your deployment surface before committing. | Sessions are stateful and stored server-side, which means they are not currently eligible for Zero Data Retention or a HIPAA Business Associate Agreement. (See Anthropic API data retention documentation at platform.claude.com, verify at publish.) Currently in public beta, all endpoints require the managed-agents-2026-04-01 beta header and behaviors may be refined between releases. Build with a migration plan in place. |
 
 #### Claude Managed Agents: when to use
 
