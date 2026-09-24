@@ -90,6 +90,8 @@
         align-self: start;
         position: sticky;
         top: 24px;
+        max-height: calc(100vh - 48px);
+        overflow-y: auto;
       }
       @media (max-width: 860px) {
         nav.toc-nav { border-right: none; border-bottom: 1px solid var(--border); padding: 0 0 20px; position: static; }
@@ -193,10 +195,8 @@
 <p>CLAUDE.md is always on, and rules files add a narrower layer on top of that baseline. They live in the project’s .claude/rules/ directory and can be scoped to specific paths using a paths glob in their YAML frontmatter. A rule scoped this way loads into context only when Claude Code works with files matching the pattern, this allows a rule to be applied to one part of the codebase without cluttering the rest of the context.</p>
 <p>Note that the scoping comes from the frontmatter, not from file placement. Rules files can be organized into subdirectories of .claude/rules/ (e.g., .claude/rules/database/), but that structure is organizational only; a rules file without a paths field loads unconditionally at launch, with the same priority as CLAUDE.md, no matter where it sits inside .claude/rules/.</p>
 <p>In practice, put broad project memory and universal constraints in CLAUDE.md, and put narrow, path-specific guidance in rules files scoped with paths. A constraint like “never modify the database schema” lives in CLAUDE.md because it applies everywhere. A constraint like “all SQL in the database module must include an explicit transaction boundary” lives in .claude/rules/database.md with frontmatter such as:</p>
-<hr>
-<p>paths:</p>
-<ul><li>"src/db/*_/_.sql"</li></ul>
-<hr>
+<pre><code class="language-yaml">paths:
+  - "src/db/**/*.sql"</code></pre>
 <p>so it enters context only when Claude is working with those files.</p>
 <h3 id="hooks-running-your-own-scripts-at-fixed-points-in-the-lifecycle">Hooks: running your own scripts at fixed points in the lifecycle</h3>
 <p>A Hook allows you to intercept and control tool calls before or after they execute. When you write a specific rule in CLAUDE.md telling the agent to run Prettier after every file edited, the agent will follow it most of the time. Alternatively, a hook makes it happen every single time without exceptions because the hook fires independently of what the model decides to do.</p>
@@ -356,6 +356,7 @@
 
       const tocLinks = [...document.querySelectorAll('.toc a[href^="#"]')];
       const tocLinksById = new Map(tocLinks.map((link) => [link.hash.slice(1), link]));
+      const tocNav = document.querySelector('.toc-nav');
       const headings = [...document.querySelectorAll('main#content h2[id], main#content h3[id]')];
       let activeHeadingId = '';
 
@@ -363,7 +364,15 @@
         if (headingId === activeHeadingId || !tocLinksById.has(headingId)) return;
         const previousLink = tocLinksById.get(activeHeadingId);
         if (previousLink) previousLink.removeAttribute('aria-current');
-        tocLinksById.get(headingId).setAttribute('aria-current', 'location');
+        const activeLink = tocLinksById.get(headingId);
+        activeLink.setAttribute('aria-current', 'location');
+        const linkBounds = activeLink.getBoundingClientRect();
+        const navBounds = tocNav.getBoundingClientRect();
+        if (linkBounds.top < navBounds.top || linkBounds.bottom > navBounds.bottom) {
+          tocNav.scrollTop += linkBounds.top < navBounds.top
+            ? linkBounds.top - navBounds.top
+            : linkBounds.bottom - navBounds.bottom;
+        }
         activeHeadingId = headingId;
       }
 

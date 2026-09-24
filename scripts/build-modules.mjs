@@ -130,6 +130,8 @@ function pageTemplate({ moduleNum, h1Title, tocHtml, bodyHtml, prevHref, nextHre
         align-self: start;
         position: sticky;
         top: 24px;
+        max-height: calc(100vh - 48px);
+        overflow-y: auto;
       }
       @media (max-width: 860px) {
         nav.toc-nav { border-right: none; border-bottom: 1px solid var(--border); padding: 0 0 20px; position: static; }
@@ -230,6 +232,7 @@ function pageTemplate({ moduleNum, h1Title, tocHtml, bodyHtml, prevHref, nextHre
 
       const tocLinks = [...document.querySelectorAll('.toc a[href^="#"]')];
       const tocLinksById = new Map(tocLinks.map((link) => [link.hash.slice(1), link]));
+      const tocNav = document.querySelector('.toc-nav');
       const headings = [...document.querySelectorAll('main#content h2[id], main#content h3[id]')];
       let activeHeadingId = '';
 
@@ -237,7 +240,15 @@ function pageTemplate({ moduleNum, h1Title, tocHtml, bodyHtml, prevHref, nextHre
         if (headingId === activeHeadingId || !tocLinksById.has(headingId)) return;
         const previousLink = tocLinksById.get(activeHeadingId);
         if (previousLink) previousLink.removeAttribute('aria-current');
-        tocLinksById.get(headingId).setAttribute('aria-current', 'location');
+        const activeLink = tocLinksById.get(headingId);
+        activeLink.setAttribute('aria-current', 'location');
+        const linkBounds = activeLink.getBoundingClientRect();
+        const navBounds = tocNav.getBoundingClientRect();
+        if (linkBounds.top < navBounds.top || linkBounds.bottom > navBounds.bottom) {
+          tocNav.scrollTop += linkBounds.top < navBounds.top
+            ? linkBounds.top - navBounds.top
+            : linkBounds.bottom - navBounds.bottom;
+        }
         activeHeadingId = headingId;
       }
 

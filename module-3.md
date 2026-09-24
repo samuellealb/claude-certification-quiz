@@ -82,13 +82,10 @@ Note that the scoping comes from the frontmatter, not from file placement. Rules
 
 In practice, put broad project memory and universal constraints in CLAUDE.md, and put narrow, path-specific guidance in rules files scoped with paths. A constraint like “never modify the database schema” lives in CLAUDE.md because it applies everywhere. A constraint like “all SQL in the database module must include an explicit transaction boundary” lives in .claude/rules/database.md with frontmatter such as:
 
----
-
+```yaml
 paths:
-
-- "src/db/\*_/_.sql"
-
----
+  - "src/db/**/*.sql"
+```
 
 so it enters context only when Claude is working with those files.
 
