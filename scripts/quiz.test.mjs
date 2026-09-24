@@ -145,6 +145,41 @@ test('exam skips count against 1000 points; study skips remain visible but ungra
   assert.match(quiz.app.innerHTML, /Your answer: Unanswered/);
 });
 
+test('score weights each attempted domain by its exam blueprint weight, redistributing unattempted weight', () => {
+  const quiz = loadQuiz();
+  // Only d1 (27% weight) and d2 (18% weight) are attempted: d1 fully correct, d2 fully wrong.
+  // Redistributed: 1 * (27/45) + 0 * (18/45) = 0.6 -> 600/1000, below the 720 pass mark.
+  quiz.run(`
+    const pool = ['d1', 'd2'].map((domain) => ITEM_BANK.find((i) => i.domain === domain));
+    state.attempt = {
+      pool, index: 0,
+      answers: [pool[0].answer, (pool[1].answer + 1) % pool[1].options.length],
+      checked: [false, false], flagged: [false, false],
+      timerId: null, autoSubmitted: false
+    };
+    state.view = 'results'; config.form = 'examForm'; renderResults();
+  `);
+  assert.match(quiz.app.innerHTML, /<span>600<\/span>/);
+  assert.match(quiz.app.innerHTML, /60%/);
+  assert.match(quiz.app.innerHTML, /Below pass mark/);
+  assert.match(quiz.app.innerHTML, /27% weight/);
+  assert.match(quiz.app.innerHTML, /18% weight/);
+  assert.doesNotMatch(quiz.app.innerHTML, /D3|D4|D5/);
+
+  quiz.run(`
+    const pool2 = ['d1', 'd2', 'd3', 'd4', 'd5'].map((domain) => ITEM_BANK.find((i) => i.domain === domain));
+    state.attempt = {
+      pool: pool2, index: 0,
+      answers: pool2.map((item) => item.answer),
+      checked: pool2.map(() => false), flagged: pool2.map(() => false),
+      timerId: null, autoSubmitted: false
+    };
+    renderResults();
+  `);
+  assert.match(quiz.app.innerHTML, /<span>1000<\/span>/);
+  assert.match(quiz.app.innerHTML, /Pass<\/strong> \(720 needed\)/);
+});
+
 test('submitting twice records each answer once', () => {
   const quiz = loadQuiz();
   quiz.run("config.form = 'examForm'; config.clock = 'timed'; startAttempt(); finishAttempt(); finishAttempt()");

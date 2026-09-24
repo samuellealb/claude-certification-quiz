@@ -495,12 +495,14 @@
 
       applyTheme(getPreferredTheme());
       document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+      // Official exam blueprint weights (percent of the scaled score), used for weighted grading only —
+      // unrelated to this bank's question-count distribution shown on the config screen.
       const DOMAINS = [
-        { id: 'd1', code: 'D1', name: 'Agentic Architecture & Orchestration' },
-        { id: 'd2', code: 'D2', name: 'Tool Design & MCP Integration' },
-        { id: 'd3', code: 'D3', name: 'Claude Code Configuration & Workflows' },
-        { id: 'd4', code: 'D4', name: 'Prompt Engineering & Structured Output' },
-        { id: 'd5', code: 'D5', name: 'Context & Reliability' }
+        { id: 'd1', code: 'D1', name: 'Agentic Architecture & Orchestration', weight: 27 },
+        { id: 'd2', code: 'D2', name: 'Tool Design & MCP Integration', weight: 18 },
+        { id: 'd3', code: 'D3', name: 'Claude Code Configuration & Workflows', weight: 20 },
+        { id: 'd4', code: 'D4', name: 'Prompt Engineering & Structured Output', weight: 20 },
+        { id: 'd5', code: 'D5', name: 'Context & Reliability', weight: 15 }
       ];
 
       const BADGE_LABELS = {
@@ -1415,6 +1417,20 @@
 
       const EXAM_FORM_SIZE = Math.min(60, TOTAL_ITEMS);
       const EXAM_FORM_MINUTES = 120;
+      const PASS_SCORE = 720;
+
+      // Weights a per-domain percent-correct into a 0-1000 grade. A domain with no
+      // attempted items drops out and its weight is redistributed proportionally
+      // among the domains that were assessed.
+      function computeWeightedScore(byDomainAll) {
+        const assessed = byDomainAll.filter((d) => d.attempted > 0);
+        const assessedWeight = assessed.reduce((sum, d) => sum + d.weight, 0);
+        const fraction = assessedWeight
+          ? assessed.reduce((sum, d) => sum + (d.correct / d.attempted) * (d.weight / assessedWeight), 0)
+          : 0;
+        const points = Math.round(fraction * 1000);
+        return { points, pct: Math.round(fraction * 100), passed: points >= PASS_SCORE, assessed };
+      }
 
       const config = {
         form: 'studySet',
@@ -1564,7 +1580,10 @@
             <p class="lede">
               These five study modules reproduce official-course content; the quiz is an unofficial practice tool, not an official mock exam.
               Use the official course and mock exams as primary preparation. The bars below show this question bank's distribution, not verified exam weights.
-              Exam forms use a 120-minute countdown and report a 0–1000 grade (1000 means 100% correct), with no implied passing threshold.
+              Exam forms use a 120-minute countdown and report a 0–1000 grade, domain-weighted to the official exam blueprint
+              (D1 27% · D2 18% · D3 20% · D4 20% · D5 15%), with a pass mark of 720/1000. A domain with no attempted items has its
+              weight redistributed proportionally among the others. The real exam reports a scaled score from 100–1,000 plus your
+              percent-correct by domain, so treat this score as a readiness gauge rather than a prediction of your scaled score.
               Keys are checked against the module files in this repository. Where an item turns on a specific parameter, flag, or API constraint,
               a <strong>Docs note</strong> records the exact detail named in the modules. <strong>Unbadged</strong> means the modules state the answer
               directly. <strong>Inferred</strong> extends a documented principle to a case the modules do not directly address.
@@ -2081,7 +2100,7 @@
 
       // Builds a text-based (selectable) PDF via jsPDF, loaded from CDN in <head>,
       // styled to echo the live results page: colored text, bordered cards, and bar graphics.
-      function exportResultsToPdf(reviewed, correctCount, total, points, pct, byDomain) {
+      function exportResultsToPdf(reviewed, correctCount, total, points, pct, byDomain, passed) {
         if (!window.jspdf) {
           alert('PDF export could not load. Check your internet connection and try again.');
           return;
@@ -2166,18 +2185,23 @@
         doc.setTextColor(...COLOR.accentSolid);
         doc.text(`${points} / 1000`, marginX, y + 22);
         setFont(12, true);
+        doc.setTextColor(...(passed ? COLOR.goodSolid : COLOR.badSolid));
+        doc.text(passed ? 'PASS' : 'BELOW PASS MARK (720)', marginX + 185, y + 12);
         doc.setTextColor(...COLOR.text);
-        doc.text(`${pct}% · ${correctCount} / ${total} correct`, marginX + 185, y + 18);
+        doc.text(`${pct}% · ${correctCount} / ${total} correct`, marginX + 185, y + 28);
         y += 34;
         drawBar(marginX, y, maxWidth, 8, pct, COLOR.accent);
         y += 26;
+
+        writeLines('Domain-weighted grade: each domain\'s percent correct is multiplied by its exam weight, redistributed proportionally when a domain has no attempted items. Treat this as a readiness gauge, not a predicted scaled score.', 8.5, { color: COLOR.muted });
+        y += 10;
 
         byDomain.forEach((d) => {
           const domainPct = Math.round((d.correct / d.attempted) * 100) || 0;
           ensureSpace(30);
           setFont(9.5, false);
           doc.setTextColor(...COLOR.muted);
-          doc.text(`${d.code} \u00b7 ${d.name}`, marginX, y);
+          doc.text(`${d.code} \u00b7 ${d.name} (${d.weight}% weight)`, marginX, y);
           setFont(9.5, true);
           doc.setTextColor(...COLOR.text);
           doc.text(`${d.correct}/${d.attempted} (${domainPct}%)`, marginX + maxWidth, y, { align: 'right' });
@@ -2281,20 +2305,19 @@
         const graded = config.form === 'examForm' ? reviewed : reviewed.filter(({ selected }) => selected !== null);
         const total = graded.length;
         const correctCount = graded.reduce((acc, { item, selected }) => acc + (selected === item.answer ? 1 : 0), 0);
-        const points = total ? Math.round(correctCount / total * 1000) : 0;
-        const pct = Math.round((correctCount / total) * 100) || 0;
 
-        const byDomain = DOMAINS.map((d) => {
+        const byDomainAll = DOMAINS.map((d) => {
           const items = graded.filter(({ item }) => item.domain === d.id);
           const correct = items.reduce((acc, { item, selected }) => acc + (selected === item.answer ? 1 : 0), 0);
           return { ...d, attempted: items.length, correct };
-        }).filter((d) => d.attempted > 0);
+        });
+        const { points, pct, passed, assessed: byDomain } = computeWeightedScore(byDomainAll);
 
         const breakdownMarkup = byDomain.map((d) => {
           const domainPct = Math.round((d.correct / d.attempted) * 100) || 0;
           return `
             <div class="breakdown-row">
-              <div class="name">${d.code} · ${d.name}</div>
+              <div class="name">${d.code} · ${d.name} <span class="section-note">${d.weight}% weight</span></div>
               <div class="track"><div class="fill" style="width:${domainPct}%"></div></div>
               <div class="num">${d.correct}/${d.attempted}</div>
             </div>
@@ -2339,7 +2362,9 @@
             <h2 id="scoreSummaryHeading" class="section-label">Score summary</h2>
             <div class="score-wrap">
               <div class="score-ring" style="--pct:${pct};"><span>${points}</span></div>
-              <div class="score-caption">/ 1000 · ${pct}%<br>${correctCount} / ${total} correct</div>
+              <div class="score-caption">/ 1000 · ${pct}% · <strong style="color: var(${passed ? '--good' : '--bad'});">${passed ? 'Pass' : 'Below pass mark'}</strong> (720 needed)<br>${correctCount} / ${total} correct overall
+                <p style="margin: 8px 0 0;">Domain-weighted grade: each domain's percent correct is multiplied by its exam weight. A domain with no attempted items here has its weight redistributed proportionally among the others. The real exam reports a scaled score from 100–1,000 plus percent-correct by domain, so treat this as a readiness gauge, not a predicted scaled score.</p>
+              </div>
               <div class="domain-breakdown">${breakdownMarkup}</div>
             </div>
           </section>
@@ -2366,11 +2391,11 @@
         });
 
         document.getElementById('exportPdfBtn').addEventListener('click', () => {
-          exportResultsToPdf(reviewed, correctCount, total, points, pct, byDomain);
+          exportResultsToPdf(reviewed, correctCount, total, points, pct, byDomain, passed);
         });
 
         document.getElementById('resultsHeading').focus();
-        announce(`Attempt complete. You scored ${points} of 1000 points, ${correctCount} of ${total} correct, ${pct}%.`);
+        announce(`Attempt complete. You scored ${points} of 1000 points, ${passed ? 'a pass' : 'below the 720 pass mark'}, ${correctCount} of ${total} correct, ${pct}%.`);
       }
 
       // Restores an in-progress attempt from a prior session, otherwise starts at config
