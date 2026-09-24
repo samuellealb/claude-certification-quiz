@@ -74,7 +74,7 @@ test('exam draws 60 unique scenario questions in fixed domain quotas', () => {
     assert.equal(pool.length, 60);
     assert.equal(new Set(pool.map((item) => item.id)).size, 60);
     assert.ok(pool.every((item) => quiz.run(`EXAM_SCENARIO_IDS.has(${JSON.stringify(item.id)})`)));
-    assert.deepEqual(['d1', 'd2', 'd3', 'd4', 'd5'].map((domain) => pool.filter((item) => item.domain === domain).length), [12, 10, 13, 11, 14]);
+    assert.deepEqual(['d1', 'd2', 'd3', 'd4', 'd5'].map((domain) => pool.filter((item) => item.domain === domain).length), [11, 11, 13, 11, 14]);
   }
 });
 
