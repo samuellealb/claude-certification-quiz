@@ -80,7 +80,7 @@ Now imagine the feature should return a one-paragraph rationale for a recommenda
 
 A judge is a second model call per case, so a thousand-case eval graded by a judge is a thousand extra API calls every time you run it. That is reasonable for a periodic full evaluation but wasteful as a tight inner loop. Many teams grade format and structure with code on every commit and reserve the judge for a slower, scheduled quality pass. Matching the grader to the task is partially about signal and partially about how often you can afford to run it.
 
-### ### The grader-selection table you can keep open while you build
+### The grader-selection table you can keep open while you build
 
 Of the three methods listed below, the judge is the only one you must build and tune, so it gets its own treatment here.
 
@@ -136,10 +136,10 @@ A graded target needs a test and tracing layer underneath it: tests that isolate
 
 A test is only useful if you know which failure it identifies. Four levels divide the work, and most silent production breaks live at one particular level:
 
-A unit test isolates one function, such as a parser or a tool wrapper, and checks it on its own. It tells you that one piece behaves, but nothing about how pieces fit together.
-A functional test checks that one Claude call returns the expected shape for a given input: the right fields, the right type, a parseable response. It validates the call rather than the system around it.
-An integration test exercises the handoff between two components, for example, where a retrieval result is passed into a model call. This is where most silent failures hide, because each side can pass its own tests while the handoff between them is broken.
-An end-to-end test runs the whole flow the way a user would, from input to output. It catches breaks that only appear when everything runs together, at the cost of being the slowest to run and the hardest to localize.
+- **Unit test**: Isolates one function, such as a parser or a tool wrapper, and checks it on its own. It tells you that one piece behaves, but nothing about how pieces fit together.
+- **Functional test**: Checks that one Claude call returns the expected shape for a given input: the right fields, the right type, a parseable response. It validates the call rather than the system around it.
+- **Integration test**: Exercises the handoff between two components, for example, where a retrieval result is passed into a model call. This is where most silent failures hide, because each side can pass its own tests while the handoff between them is broken.
+- **End-to-end test**: Runs the whole flow the way a user would, from input to output. It catches breaks that only appear when everything runs together, at the cost of being the slowest to run and the hardest to localize.
 
 ### Tracing: finding the source of failure
 
@@ -147,7 +147,7 @@ Tests tell you that a failure exists, but they do not tell you which step caused
 
 A trace records each step of a run: the prompt, the tool calls, the intermediate outputs, and the timing. When a case fails, the trace lets you see which step produced the bad result. Without a trace, a failed eval tells you something is wrong but does not tell you where it failed. This is the difference between a five-minute fix and a day spent tracing the workflow by hand. A trace reads like a timeline of the run, and the failing step is usually obvious once you can see the intermediate output.
 
-```
+```text
 [trace run_id=8f21c] case: "Where is my refund?"
 step 1 retrieve(query) ok 42ms -> 3 chunks
 step 2 build_prompt(chunks) ok 1ms -> prompt 1,240 tok
@@ -172,18 +172,18 @@ def route(query):
 
 That one classification call costs far less than running iterative search on a query a single retrieval would have answered. The router earns its cost whenever your traffic is mixed: some queries are simple lookups and some need several passes. If every query is the same shape, skip the router and hardcode the path that fits.
 
-The reference you can keep open while you build
-Level What it isolates What it cannot catch
-Unit One function, such as a parser or tool wrapper, on its own. Anything about how components fit together.
-Functional One Claude call returning the expected shape for an input. Failures in the system around that single call.
-Integration The seam where two components hand off, such as retrieval into the model. Whole-flow behavior that only emerges end to end.
-End-to-end The full flow as a user runs it, input to output. Where exactly the break is, since it sees only the final result.
-Retrieval choice Fetch a fixed set once for single-fact lookups in a stable corpus. Multi-step questions and changing corpora, which need search across rounds.
-Handles well
-Localizes a failure to a step and matches each test to the break it can see.
+#### The reference you can keep open while you build
 
-Adds cost or complexity
-Tracing and four test levels are infrastructure you build and maintain.
+| Level | What it isolates | What it cannot catch |
+| --- | --- | --- |
+| Unit | One function, such as a parser or tool wrapper, on its own. | Anything about how components fit together. |
+| Functional | One Claude call returning the expected shape for an input. | Failures in the system around that single call. |
+| Integration | The seam where two components hand off, such as retrieval into the model. | Whole-flow behavior that only emerges end to end. |
+| End-to-end | The full flow as a user runs it, input to output. | Where exactly the break is, since it sees only the final result. |
+| Retrieval choice | Fetch a fixed set once for single-fact lookups in a stable corpus. | Multi-step questions and changing corpora, which need search across rounds. |
+
+- **Handles well**: Localizes a failure to a step and matches each test to the break it can see.
+- **Adds cost or complexity**: Tracing and four test levels are infrastructure you build and maintain.
 
 ## Failure Handling & Model Selection
 
@@ -223,12 +223,13 @@ When your code runs a tool and that tool fails, the result should be returned to
 
 ### The error-handling decision table you can keep open while you build
 
-Error type Retriable or fail-fast Backoff strategy Fallback behavior
-Rate limit (429) Retriable Exponential backoff with jitter, honor retry-after, capped attempts. After the cap, raise a clean error or route to a cached or simpler result.
-Overloaded (529) Retriable Backoff; a 529 reflects Anthropic-side load, so it is not a rate-limit signal. Fail over to a fallback path or return a graceful error if it persists.
-Bad request (400) Fail fast No retry. The identical request will fail again. Fix or reject the input and surface the error to the caller.
-Tool result error Depends on the tool Retry only if the underlying cause is transient. Return the error flag to Claude so the model can react, never silence it.
-Refusal (200, stop_reason: "refusal") Fail fast No retry. The model made a content decision, not a transient error. Raise the refusal to the caller. Log it. Do not silently retry or treat it as valid output.
+| Error type | Retriable or fail-fast | Backoff strategy | Fallback behavior |
+| --- | --- | --- | --- |
+| Rate limit (429) | Retriable | Exponential backoff with jitter, honor `retry-after`, capped attempts. | After the cap, raise a clean error or route to a cached or simpler result. |
+| Overloaded (529) | Retriable | Backoff; a 529 reflects Anthropic-side load, so it is not a rate-limit signal. | Fail over to a fallback path or return a graceful error if it persists. |
+| Bad request (400) | Fail fast | No retry. The identical request will fail again. | Fix or reject the input and surface the error to the caller. |
+| Tool result error | Depends on the tool | Retry only if the underlying cause is transient. | Return the error flag to Claude so the model can react, never silence it. |
+| Refusal (200, `stop_reason: "refusal"`) | Fail fast | No retry. The model made a content decision, not a transient error. | Raise the refusal to the caller. Log it. Do not silently retry or treat it as valid output. |
 
 ### Model selection in production
 
@@ -240,16 +241,20 @@ The previous screens kept a system inside its cost budget once the model was cho
 
 Cost management optimizes spend within a model. Model selection determines the baseline that optimization works from.
 
-The model family and its capability tiers
+#### The model family and its capability tiers
+
 Claude is a family of models that trade cost, latency, and capability against each other: Fable is the most capable for the most demanding reasoning, coding, and agentic work; Opus handles demanding work above the Sonnet envelope; Sonnet is the balanced default for most production workloads; Haiku is built for speed and cost efficiency on tasks that fit its envelope. The same prompt runs on any of them, so model choice is a lever you set per workload and can change without rewriting the application. Confirm the current lineup and model IDs against platform.claude.com at build time.
 
-The latency, cost, and quality trade-off
+#### The latency, cost, and quality trade-off
+
 Upgrading model tier trades quality at the price of higher per-token cost and usually higher latency. Downgrading the model tier buys speed and lower cost at the risk of a quality drop. A higher-tier model can also process a request faster and cheaper if it reaches a conclusion in fewer tokens than a lower-tier model would. The cost of a mistake belongs in that calculation: saving a few dollars a day on a lower-tier model is not a sound trade if the quality drop introduces errors that carry significant downstream cost. There is no globally correct choice, only the right choice for a task at a quality standard. The discipline is to make the trade-off measurable rather than reaching for the most capable model by default. This is the most common and most expensive model-selection mistake in production. The default is to start with Sonnet, move up to Opus only when an eval shows Sonnet missing the quality bar, and move down to Haiku only when an eval shows the quality drop is acceptable for the task.
 
-Routing: a default model plus an override on a task signal
+#### Routing: a default model plus an override on a task signal
+
 A system does not have to use one model for everything. A common production pattern is a default model with an override: route the bulk of traffic to a balanced default, and send specific request types to a larger or smaller model based on a cheap signal read from the request, such as task type, input length, or a difficulty classification. This is the same routing idea used for retrieval, applied to model choice: you pay for the more capable model only on the requests that need it. Where every request is the same shape, skip the router and pin one model.
 
-When to step up and when to step down
+#### When to step up and when to step down
+
 Step up a tier when an eval shows the current model failing on the hardest cases your traffic contains and the cost of a wrong answer is high. Step down a tier when an eval shows a cheaper model holding the quality bar on the bulk of traffic, freeing budget and latency. In both directions the eval is the instrument: a model change is promoted on a measured score against your cases. This is why the eval you built earlier is also the gate for a model decision.
 
 ## Cost & Orchestration
@@ -444,7 +449,8 @@ The threat model is also broader than a single retrieved page. Any content the a
 
 A jailbreak tries to get the model to ignore its own safety constraints. A prompt injection tries to hijack your application's instructions. They are different targets, but the layered defense has the same approach: validate and constrain what reaches the model and limit what the model is allowed to do as a result. Defending only the prompt and not the action leaves the model free to cause damage once it has been steered. This is why the action side of the boundary matters just as much as the input side. The example above is harmless if the agent has no tool that can write to that path, which is exactly why the action side is where the boundary becomes real.
 
-Secure-by-design identity and access: least privilege, scoped secrets
+### Secure-by-design identity and access: least privilege, scoped secrets
+
 The action boundary is built from identity and access, which is the next layer of defense. A production agent acts with some identity, and that identity should carry only the permissions the task requires, meaning the narrowest set of permissions that still lets the job run. Secrets belong in environment variables or a secret manager, never in committed configuration. Access should be scoped so the agent can reach only the systems its task requires. One detail is easy to miss: anything that can modify the agent's auth configuration can effectively act with that identity. Protecting that configuration matters just as much as protecting the secret itself. This builds on the authentication patterns from the prior module. There, auth was about getting the agent connected. Here, it is about limiting what a connected agent can reach.
 
 ```python

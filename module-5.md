@@ -107,17 +107,9 @@ Infrastructure requirements are the non-functional constraints the deployment mu
 
 Requirements are written down because the deployment decision will be reviewed by people who did not gather them. A short requirements record covering the functional behaviors, the infrastructure constraints, and the regulation each constraint comes from lets you defend a platform choice as following from the requirements rather than from familiarity. This record is the input the next screen's deployment decision reads from.
 
-#### Handles well
-
-Turning a business problem into checkable functional and infrastructure requirements before any platform is chosen.
-
-#### Adds cost or complexity
-
-Eliciting infrastructure constraints up front takes a scoping conversation the team is tempted to skip.
-
-#### Use a different approach
-
-For a throwaway prototype with no review and no regulated data, lightweight notes are enough.
+- **Handles well**: Turning a business problem into checkable functional and infrastructure requirements before any platform is chosen.
+- **Adds cost or complexity**: Eliciting infrastructure constraints up front takes a scoping conversation the team is tempted to skip.
+- **Use a different approach**: For a throwaway prototype with no review and no regulated data, lightweight notes are enough.
 
 ### Systems lifecycle for Claude applications
 
@@ -127,29 +119,23 @@ The requirements you just captured are the first phase of a longer arc. This scr
 
 A Claude application moves through the same lifecycle as any engineered system, with the model work mapped onto it:
 
-1Requirements: capture functional and infrastructure needs
-2Design: choose the platform, the model, and the trust boundaries
-3Build: write the agent, tools, and prompts
-4Test: evals, unit, integration, and end-to-end checks
-5Deploy: pin the version, gate promotion on the eval
-6Operate: instrument cost, latency, and errors; enforce guardrails
-7Iterate: feed production findings back into requirements
+1. **Requirements**: capture functional and infrastructure needs
+2. **Design**: choose the platform, the model, and the trust boundaries
+3. **Build**: write the agent, tools, and prompts
+4. **Test**: evals, unit, integration, and end-to-end checks
+5. **Deploy**: pin the version, gate promotion on the eval
+6. **Operate**: instrument cost, latency, and errors; enforce guardrails
+7. **Iterate**: feed production findings back into requirements
+
 The phases are the same ones the earlier modules taught one at a time. Identifying them as a lifecycle is what shows how they connect.
 
 #### Gating between phases
 
 A gate is a decision to move from one phase to the next, and it is where a regulated engagement keeps control. You do not move from design to build until the platform satisfies the residency requirement; you do not move from deploy toward full production until the new version clears the eval against the pinned baseline. Placing engineering work in the right phase, and refusing to skip a gate, is what keeps a Claude application reviewable.
 
-- **Handles well**
-  Placing each piece of engineering work in the lifecycle phase it belongs to, with a defined artifact and gate.
-
-- **Adds cost or complexity**
-
-Gating between phases adds checkpoints a team under deadline is tempted to skip.
-
-- **Use a different approach**
-
-A one-off experiment may collapse phases, but a regulated deployment cannot.
+- **Handles well**: Placing each piece of engineering work in the lifecycle phase it belongs to, with a defined artifact and gate.
+- **Adds cost or complexity**: Gating between phases adds checkpoints a team under deadline is tempted to skip.
+- **Use a different approach**: A one-off experiment may collapse phases, but a regulated deployment cannot.
 
 ## Deployment & Versioning
 
@@ -197,13 +183,9 @@ Gate promotion on the eval suite. Send a new version to a portion of traffic, co
 | Google Vertex AI | Google Cloud identity, Identity and Access Management (IAM), and billing, with regional or global endpoints for residency. | The customer is on Google Cloud and holds a compliance posture there. | Pin the full model ID before rollout using Vertex's model ID format. Partner retirement dates differ from Anthropic's schedule. |
 | Third-party platform | The wrapping product's identity and billing model. Note: Claude in Microsoft Foundry offers two hosting forms: Hosted on Azure (currently Opus 4.8, Sonnet 5, and Haiku 4.5; inference end-to-end on Azure) and Hosted on Anthropic (all other Foundry Claude models). | The customer already runs the platform that embeds Claude. | Pin per the platform's versioning controls. |
 
-- Handles well: Matching the platform to the customer cloud and pinning the version keeps a migration reviewable and a rollback possible.
-
-Adds cost or complexity
-Pinning, retaining prior versions, and gating promotion on the eval add release-process overhead to every deployment.
-
-Use a different approach
-For a throwaway prototype that never touches production, a moving alias is fine: pinning is for what ships.
+- **Handles well**: Matching the platform to the customer cloud and pinning the version keeps a migration reviewable and a rollback possible.
+- **Adds cost or complexity**: Pinning, retaining prior versions, and gating promotion on the eval add release-process overhead to every deployment.
+- **Use a different approach**: For a throwaway prototype that never touches production, a moving alias is fine: pinning is for what ships.
 
 ## Comparing Platforms
 
@@ -261,10 +243,6 @@ A regulated review requires justifying audit logging, data-residency decisions, 
 | Claude Code task | Runs the agentic work and may fetch external content. | Content it fetched, which is untrusted downstream. | Treat fetched content as data at the next seam. |
 | MCP server | Reaches a customer system to read or act. | The system access it holds on the app's behalf. | Scope the server to least privilege and log the access. |
 
-- Handles well: Naming every seam as a boundary and scoping each component to least privilege makes a multi-component app deployable under review.
-
-Adds cost or complexity
-Mapping seams, enforcing controls at each, and logging boundary crossings adds design and audit work to every integration.
-
-Use a different approach
-When a seam cannot be secured, do not ship around it: escalate to a human owner.
+- **Handles well**: Naming every seam as a boundary and scoping each component to least privilege makes a multi-component app deployable under review.
+- **Adds cost or complexity**: Mapping seams, enforcing controls at each, and logging boundary crossings adds design and audit work to every integration.
+- **Use a different approach**: When a seam cannot be secured, do not ship around it: escalate to a human owner.

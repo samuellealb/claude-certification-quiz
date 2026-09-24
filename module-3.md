@@ -18,21 +18,22 @@ Permission modes control how often Claude Code stops to ask for confirmation. Ea
 
 Select each tab for what that mode auto-approves, what it still gates, and its limitations.
 
-default
-acceptEdits
-plan
-auto
-dontAsk
-bypassPermissions
+- `default`
+- `acceptEdits`
+- `plan`
+- `auto`
+- `dontAsk`
+- `bypassPermissions`
 
 ### Where does the configuration live and who it applies to
 
 Settings can be placed at several levels, and each level determines the scope of the rules it contains.
 
-User level (~/.claude/settings.json): Applies to every project on the machine. This is the right place for preferences that should follow you everywhere, such as a preferred default mode for exploration work.
-Project level (.claude/settings.json, committed to the repo): Applies to everyone who clones the repository. This is the right place for team-wide conventions, allow rules for the tools your project uses, and deny rules for paths that should not be touched.
-Local project level (.claude/settings.local.json): Personal overrides for one project, automatically git-ignored. This is the right place for your own preferences that should not be committed to the whole team.
-Enterprise level (managed-settings.json, set by administrators): Cannot be overridden by users or project files. The right place for organization-wide security controls such as denying edits to environment files or blocking specific shell commands across all projects.
+- **User level (`~/.claude/settings.json`)**: Applies to every project on the machine. This is the right place for preferences that should follow you everywhere, such as a preferred default mode for exploration work.
+- **Project level (`.claude/settings.json`, committed to the repo)**: Applies to everyone who clones the repository. This is the right place for team-wide conventions, allow rules for the tools your project uses, and deny rules for paths that should not be touched.
+- **Local project level (`.claude/settings.local.json`)**: Personal overrides for one project, automatically git-ignored. This is the right place for your own preferences that should not be committed to the whole team.
+- **Enterprise level (`managed-settings.json`, set by administrators)**: Cannot be overridden by users or project files. The right place for organization-wide security controls such as denying edits to environment files or blocking specific shell commands across all projects.
+
 Allow and deny rules layer on top of the selected mode. A deny rule always wins over an allow rule, regardless of the mode in effect. The most durable governance control is an enterprise-level deny rule: it cannot be removed by any individual developer and applies even when a bypass mode is set.
 
 ### Where a human still has to look: placing the review gate by worst-case cost
@@ -41,9 +42,10 @@ Permission modes and deny rules decide what the agent can do without asking. The
 
 That same worst-case question places the gate whether the agent is writing code or running unattended in an automated step such as a bot that comments on or blocks a pull request. Three placements follow from it:
 
-Let low-stakes, reversible actions through without a gate. A formatting fix or an edit confined to the working directory carries little cost if it is wrong, so requiring a human to approve each one buys oversight you do not need and slows the work. This is the case acceptEdits is built for.
-Gate any action that is hard to undo or reaches a sensitive path: a write outside the working directory, a destructive shell command, or an edit to a security-relevant or protected file. The cost of a wrong call there is high, so the agent should pause and surface the action for a person before it runs. A deny rule enforces this deterministically, and default or plan mode keeps the prompt in place while you decide.
-Never let the agent be the only gate on a change to code your team has marked sensitive. There the agent’s work is an input to a human decision, not a replacement for one, so a person must review the change before it merges no matter how confident the agent or its own review sounds.
+- **Let low-stakes, reversible actions through without a gate.** A formatting fix or an edit confined to the working directory carries little cost if it is wrong, so requiring a human to approve each one buys oversight you do not need and slows the work. This is the case `acceptEdits` is built for.
+- **Gate any action that is hard to undo or reaches a sensitive path.** A write outside the working directory, a destructive shell command, or an edit to a security-relevant or protected file has a high cost if it is wrong, so the agent should pause and surface the action for a person before it runs. A deny rule enforces this deterministically, and `default` or `plan` mode keeps the prompt in place while you decide.
+- **Never let the agent be the only gate on a change to code your team has marked sensitive.** There the agent’s work is an input to a human decision, not a replacement for one, so a person must review the change before it merges no matter how confident the agent or its own review sounds.
+
 The placement of the gate and the choice of permission mode are the same decision viewed from two sides. The mode sets the default for a whole session, and the gate is where you override that default for the one action whose cost is too high to leave to the default; both come from asking what breaks if this runs unchecked.
 
 ### Cost, complexity, and risk
@@ -94,13 +96,14 @@ A Hook allows you to intercept and control tool calls before or after they execu
 
 Hooks are defined in settings files and configured using the /hooks command. Each hook is bound to a lifecycle event, an optional matcher that scopes it to specific tool types, and a command that runs when the event fires. The core events for most guardrail and automation use cases are:
 
-PreToolUse: Runs before a tool call executes. Because it runs first, a PreToolUse hook can examine the tool call and exit with code 2 to block it, writing the reason to stderr as feedback the agent sees. This is how you enforce access controls at the configuration layer rather than hoping the agent respects a CLAUDE.md instruction.
-PostToolUse: Runs after a tool call completes. Since the call has already happened, this event cannot block it, which makes it the right place for automated side effects: running a code formatter after an edit, triggering tests after a file change, or logging the operation for an audit trail.
-UserPromptSubmit: Runs when you submit a prompt, before the model processes it. Use it when you need to inject context or validate the request before any work starts.
-Stop: Runs when the model finishes responding. Use it for follow-up actions that belong at the end of a turn, such as notifications, cleanup tasks, or committing the audit log.
-Notification: Runs when Claude Code sends a notification, which occurs when Claude needs permission to use a tool or after Claude Code has been idle for 60 seconds. Use it to route those signals to an external channel or logging system.
-SessionStart: Runs when a session starts or resumes. Use it to initialize state, validate environment variables, or confirm required services are reachable before the agent begins work.
-SessionEnd: Runs when a session ends. Use it for teardown tasks, final audit writes, or notifications that the session has closed.
+- **PreToolUse**: Runs before a tool call executes. Because it runs first, a PreToolUse hook can examine the tool call and exit with code 2 to block it, writing the reason to stderr as feedback the agent sees. This is how you enforce access controls at the configuration layer rather than hoping the agent respects a `CLAUDE.md` instruction.
+- **PostToolUse**: Runs after a tool call completes. Since the call has already happened, this event cannot block it, which makes it the right place for automated side effects: running a code formatter after an edit, triggering tests after a file change, or logging the operation for an audit trail.
+- **UserPromptSubmit**: Runs when you submit a prompt, before the model processes it. Use it when you need to inject context or validate the request before any work starts.
+- **Stop**: Runs when the model finishes responding. Use it for follow-up actions that belong at the end of a turn, such as notifications, cleanup tasks, or committing the audit log.
+- **Notification**: Runs when Claude Code sends a notification, which occurs when Claude needs permission to use a tool or after Claude Code has been idle for 60 seconds. Use it to route those signals to an external channel or logging system.
+- **SessionStart**: Runs when a session starts or resumes. Use it to initialize state, validate environment variables, or confirm required services are reachable before the agent begins work.
+- **SessionEnd**: Runs when a session ends. Use it for teardown tasks, final audit writes, or notifications that the session has closed.
+
 A hook that blocks edits to a production configuration path using a PreToolUse event enforces that constraint at every tool call during every session, regardless of permission mode. That is the difference between a guardrail and a convention.
 
 ### Subagents: delegating work to an isolated context
@@ -127,41 +130,34 @@ A skill is a portable Markdown file (SKILL.md file) placed in .claude/skills. Th
 
 #### Claude Code
 
-How the skill loads: Discovered from .claude/skills on the filesystem. Loads on a description match or when you invoke it by name.
-
-Where the steps run: In your terminal session, against your local files, under the active permission mode and deny rules.
-
-What you need to know: It’s filesystem-based and is governed by the settings layer.
+- **How the skill loads**: Discovered from `.claude/skills` on the filesystem. Loads on a description match or when you invoke it by name.
+- **Where the steps run**: In your terminal session, against your local files, under the active permission mode and deny rules.
+- **What you need to know**: It’s filesystem-based and is governed by the settings layer.
 
 #### Messages API
 
-How the skill loads: Sent along with the request and run inside the code execution container, not your application’s environment. Requires code-execution and skills beta headers.
-
-Where the steps run: Inside Anthropic’s code execution container, not on your machine. The skill’s filesystem and tool access are whatever that container provides.
-
-What you need to know: A skill that assumes local files or local tools won’t behave the same way here, because it isn’t running where those files are.
+- **How the skill loads**: Sent along with the request and run inside the code execution container, not your application’s environment. Requires code-execution and skills beta headers.
+- **Where the steps run**: Inside Anthropic’s code execution container, not on your machine. The skill’s filesystem and tool access are whatever that container provides.
+- **What you need to know**: A skill that assumes local files or local tools won’t behave the same way here, because it isn’t running where those files are.
 
 #### Agent SDK
 
-How the skill loads: Loaded by the agent the SDK runs, but whether filesystem settings (CLAUDE.md, skills) load is controlled by the settingSources configuration. Do not rely on a default: always set it explicitly to the sources you intend, and confirm current default behavior against the Agent SDK reference at build time. You set it through the “settingSources” (TypeScript) / “setting_sources” (Python).
-
-Where the steps run: In the process the SDK runs, which is your environment, once you’ve told it to load filesystem sources.
-
-What you need to know: The common surprise: a skill that worked in Claude Code does nothing under the SDK because settingSources was never set, so the skill never loaded.
+- **How the skill loads**: Loaded by the agent the SDK runs, but whether filesystem settings (`CLAUDE.md`, skills) load is controlled by the `settingSources` configuration. Do not rely on a default: always set it explicitly to the sources you intend, and confirm current default behavior against the Agent SDK reference at build time. You set it through `settingSources` (TypeScript) / `setting_sources` (Python).
+- **Where the steps run**: In the process the SDK runs, which is your environment, once you’ve told it to load filesystem sources.
+- **What you need to know**: The common surprise is that a skill that worked in Claude Code does nothing under the SDK because `settingSources` was never set, so the skill never loaded.
 
 #### Claude Managed Agents
 
-How the skill loads: Defined once as an API resource that names the model, system prompt, tools, MCP servers, and skills. Anthropic loads the skill server-side when the agent runs, so there is no filesystem discovery step on your side.
-
-Where the steps run: Inside a sandbox Anthropic provisions and runs, not your environment. Your application sends user events and reads streamed results back. The skill has access to whatever that managed sandbox provides, not your local files.
-
-What you need to know: Currently a public beta that requires the managed-agents-2026-04-01 beta header, and sessions are stored server-side, which means Managed Agents are not currently eligible for Zero Data Retention or HIPAA BAA coverage. Skills are attached when defining the agent resource, not at session time. Update the agent definition to change which skills are available.
+- **How the skill loads**: Defined once as an API resource that names the model, system prompt, tools, MCP servers, and skills. Anthropic loads the skill server-side when the agent runs, so there is no filesystem discovery step on your side.
+- **Where the steps run**: Inside a sandbox Anthropic provisions and runs, not your environment. Your application sends user events and reads streamed results back. The skill has access to whatever that managed sandbox provides, not your local files.
+- **What you need to know**: Currently a public beta that requires the `managed-agents-2026-04-01` beta header, and sessions are stored server-side, which means Managed Agents are not currently eligible for Zero Data Retention or HIPAA BAA coverage. Skills are attached when defining the agent resource, not at session time. Update the agent definition to change which skills are available.
 
 ### Three portability rules
 
-Write the description as the matching criterion. The model loads a skill by comparing your request to its description, so a description that identifies when the skill applies works in every runtime, but a vague one fails to load in all of them.
-Don’t assume a local filesystem or local tools exist inside the skill body. A skill that shells out to a local command works in Claude Code but breaks on the Messages API, where it runs in a container without a command. Keep the skill’s steps confined to what the runtime is guaranteed to provide, or document the dependency.
-Remember that subagents don’t inherit skills. This was true in Module 2, and is still true here: a subagent starts clean, so a skill the parent relied on has to be listed for the subagent explicitly, in every runtime that supports subagents.
+- **Write the description as the matching criterion.** The model loads a skill by comparing your request to its description, so a description that identifies when the skill applies works in every runtime, but a vague one fails to load in all of them.
+- **Don’t assume a local filesystem or local tools exist inside the skill body.** A skill that shells out to a local command works in Claude Code but breaks on the Messages API, where it runs in a container without a command. Keep the skill’s steps confined to what the runtime is guaranteed to provide, or document the dependency.
+- **Remember that subagents don’t inherit skills.** This was true in Module 2, and is still true here: a subagent starts clean, so a skill the parent relied on has to be listed for the subagent explicitly, in every runtime that supports subagents.
+
 The practical takeaway is that you can author a skill once and reuse it, but you must specifically design for the ability to use it across terminals. A skill that’s scoped to a clear description and free of local-environment assumptions ports cleanly across runtimes, but one that assumes a specific local environment does not.
 
 ### Giving a workflow an explicit entry point
@@ -184,16 +180,19 @@ Enterprise administrators can deploy plugins organization-wide through managed s
 
 The table below identifies each layer, who it is for, and when to reach for it.
 
-Layer What it is Who it is for When to reach for it
-Skill A Markdown file in .claude/skills that loads when its description matches the task or when invoked by name. An individual developer or team using Claude Code interactively. Reach for a skill when a task-specific procedure should stay out of context until it is needed, such as a PR review or a deployment checklist that only loads when the work calls for it.
-Custom command A named shortcut that runs a defined procedure when you invoke it explicitly. Developers who want a predictable, explicit entry point for high-frequency procedures. Reach for a custom command when the procedure has a clear name and you want to trigger it directly rather than relying on the description to match the task.
-Plugin A versioned bundle of skills, hooks, subagents, and MCP servers distributed through a marketplace. A team that wants one-step installation of a shared, versioned setup. Reach for a plugin when a working setup currently lives on one machine and needs to be shared, versioned, and kept consistent across a team.
-Cost · Complexity · Risk
-Cost: Skills add context cost upon activation, but a plugin adds installation and maintenance overhead. The question to ask is whether you want to pay the setup cost once, as you do with a plugin install, or repeatedly, as you do when every developer runs the same manual steps by hand.
+| Layer | What it is | Who it is for | When to reach for it |
+| --- | --- | --- | --- |
+| Skill | A Markdown file in `.claude/skills` that loads when its description matches the task or when invoked by name. | An individual developer or team using Claude Code interactively. | Reach for a skill when a task-specific procedure should stay out of context until it is needed, such as a PR review or a deployment checklist that only loads when the work calls for it. |
+| Custom command | A named shortcut that runs a defined procedure when you invoke it explicitly. | Developers who want a predictable, explicit entry point for high-frequency procedures. | Reach for a custom command when the procedure has a clear name and you want to trigger it directly rather than relying on the description to match the task. |
+| Plugin | A versioned bundle of skills, hooks, subagents, and MCP servers distributed through a marketplace. | A team that wants one-step installation of a shared, versioned setup. | Reach for a plugin when a working setup currently lives on one machine and needs to be shared, versioned, and kept consistent across a team. |
 
-Complexity: A plugin that hard-codes absolute paths in its skills will install correctly for the author and fail for everyone else, because any path or environment assumption baked into a skill or hook command is the thing most likely to break across machines.
+#### Packaging cost · complexity · risk
 
-Risk: A plugin carries the components it bundles into every install. It’s important to remember that a deny rule or hook the author relied on locally is not included unless it is explicitly listed as part of the bundle. If the skills or hooks are tied to a guardrail that is not included in the bundle, then the protection does not carry over to a teammate’s machine.
+- **Cost**: Skills add context cost upon activation, but a plugin adds installation and maintenance overhead. The question to ask is whether you want to pay the setup cost once, as you do with a plugin install, or repeatedly, as you do when every developer runs the same manual steps by hand.
+
+- **Complexity**: A plugin that hard-codes absolute paths in its skills will install correctly for the author and fail for everyone else, because any path or environment assumption baked into a skill or hook command is the thing most likely to break across machines.
+
+- **Risk**: A plugin carries the components it bundles into every install. It’s important to remember that a deny rule or hook the author relied on locally is not included unless it is explicitly listed as part of the bundle. If the skills or hooks are tied to a guardrail that is not included in the bundle, then the protection does not carry over to a teammate’s machine.
 
 ## MCP Servers
 
@@ -301,26 +300,24 @@ GitHub MCP uses a service credential you generate and store; Linear MCP initiate
 
 The table below captures transport and scope decisions for each deployment context.
 
-Context Transport Scope Config location Secrets handling
-Personal local tool (runs on your machine only) stdio Local ~/.claude.json (per-project entry) Environment variables only. Never in config file.
-Shared team server (all teammates connect to same service) HTTP Project (.mcp.json) .mcp.json committed to repo root OAuth or env variables. API keys must never be committed to .mcp.json.
-Personal experiment (not ready to share) stdio or HTTP Local Personal Claude settings Environment variables only.
-Organization-wide deployment (admin-managed) HTTP Enterprise Managed settings (admin-controlled) Secrets managed by administrator. Config locked to prevent override.
-Cost · Complexity · Risk
-Cost: Each connected MCP server adds its tool definitions to the context window. The more servers connected, the larger every request. Load only the servers a given task needs.
+| Context | Transport | Scope | Config location | Secrets handling |
+| --- | --- | --- | --- | --- |
+| Personal local tool (runs on your machine only) | stdio | Local | `~/.claude.json` (per-project entry) | Environment variables only. Never in config file. |
+| Shared team server (all teammates connect to same service) | HTTP | Project (`.mcp.json`) | `.mcp.json` committed to repo root | OAuth or environment variables. API keys must never be committed to `.mcp.json`. |
+| Personal experiment (not ready to share) | stdio or HTTP | Local | Personal Claude settings | Environment variables only. |
+| Organization-wide deployment (admin-managed) | HTTP | Enterprise | Managed settings (admin-controlled) | Secrets managed by administrator. Config locked to prevent override. |
 
-Complexity: Transport and scope are independent decisions, but they interact: a stdio server cannot be project-scoped for sharing because it runs only on one machine. Match transport to where the server runs before choosing scope.
+#### MCP cost · complexity · risk
 
-Risk: Committing an API key inside .mcp.json to version control is the most common mistake in this section. The key travels into repository history where rotating later is not sufficient to remove the exposure. Secrets go in environment variables. The configuration file holds only the server address.
+- **Cost**: Each connected MCP server adds its tool definitions to the context window. The more servers connected, the larger every request. Load only the servers a given task needs.
 
-Handles well
-A reusable integration you want to use across multiple Claude Code sessions and share with the team, where the capability is stable enough to maintain as a separate process. The GitHub server is a great example.
+- **Complexity**: Transport and scope are independent decisions, but they interact: a stdio server cannot be project-scoped for sharing because it runs only on one machine. Match transport to where the server runs before choosing scope.
 
-Adds cost or complexity
-Teams that are not managing environment secrets carefully should be watched closely. Adding MCP servers increases the number of places a secret could be mishandled. The risk concentrates on the .mcp.json file, which is committed to the repository.
+- **Risk**: Committing an API key inside `.mcp.json` to version control is the most common mistake in this section. The key travels into repository history where rotating later is not sufficient to remove the exposure. Secrets go in environment variables. The configuration file holds only the server address.
 
-Use a different approach
-A one-off task where the tool logic can live directly in the codebase and does not need to be reused across sessions or applications. For a single-project integration used by one person, wiring the tool directly in the API call may be simpler than maintaining a server.
+- **Handles well**: A reusable integration you want to use across multiple Claude Code sessions and share with the team, where the capability is stable enough to maintain as a separate process. The GitHub server is a great example.
+- **Adds cost or complexity**: Teams that are not managing environment secrets carefully should be watched closely. Adding MCP servers increases the number of places a secret could be mishandled. The risk concentrates on the `.mcp.json` file, which is committed to the repository.
+- **Use a different approach**: A one-off task where the tool logic can live directly in the codebase and does not need to be reused across sessions or applications. For a single-project integration used by one person, wiring the tool directly in the API call may be simpler than maintaining a server.
 
 ## Enterprise Integration
 
@@ -384,24 +381,20 @@ Code modernization is a useful test case for everything this module covers, beca
 
 A responsible scoping approach for high-risk work addresses three questions before the session starts.
 
-What is the blast radius if something goes wrong: which systems depend on the code being changed, and what breaks downstream if an edit is wrong?
-How are changes audited: is there a PostToolUse hook logging every tool call, and does that log satisfy whoever needs to review what the agent touched?
-Who approves each phase before the next one begins? Plan mode enforces the boundary between exploration and execution, but the approval decision itself is yours to define and document before work begins.
+- **What is the blast radius if something goes wrong?** Which systems depend on the code being changed, and what breaks downstream if an edit is wrong?
+- **How are changes audited?** Is there a PostToolUse hook logging every tool call, and does that log satisfy whoever needs to review what the agent touched?
+- **Who approves each phase before the next one begins?** Plan mode enforces the boundary between exploration and execution, but the approval decision itself is yours to define and document before work begins.
+
 These questions are not specific to modernization work. They apply to any high-risk agentic task. Code modernization surfaces them clearly because the scope is large, the codebase is unfamiliar, and the cost of getting it wrong is high.
 
-### Cost · Complexity · Risk
+### Enterprise integration cost · complexity · risk
 
-Cost: OAuth flows add a one-time setup step per user per service. API key management requires a secret rotation process, and audit logging through PostToolUse hooks adds a small overhead to every tool call.
+- **Cost**: OAuth flows add a one-time setup step per user per service. API key management requires a secret rotation process, and audit logging through PostToolUse hooks adds a small overhead to every tool call.
 
-Complexity: Regulated environments add requirements that don’t appear in a prototype. Identifying them during scoping is the discipline that keeps integrations on schedule.
+- **Complexity**: Regulated environments add requirements that don’t appear in a prototype. Identifying them during scoping is the discipline that keeps integrations on schedule.
 
-Risk: The risk concentrates when a prototype moves toward production. A system that uses hardcoded credentials, has no audit log, and cannot be centrally locked will not pass a regulated customer’s security review. The fixes are not hard, but they require attention before the review.
+- **Risk**: The risk concentrates when a prototype moves toward production. A system that uses hardcoded credentials, has no audit log, and cannot be centrally locked will not pass a regulated customer’s security review. The fixes are not hard, but they require attention before the review.
 
-Handles well
-Any integration that touches data a regulated customer cares about, where the same tooling already supports enterprise managed settings and audit hooks. Scoping the security requirements up front adds little overhead and prevents the integration from stalling at the final review.
-
-Adds cost or complexity
-Teams that are not familiar with OAuth flows or enterprise secrets management. These patterns require coordination with security or IT teams in most regulated organizations, and the timeline needs to account for that.
-
-Use a different approach
-A prototype or proof of concept that will never see production data. The full enterprise integration checklist is not warranted for a demo-only integration but applying the environment variable habit for secrets costs nothing and is good practice.
+- **Handles well**: Any integration that touches data a regulated customer cares about, where the same tooling already supports enterprise managed settings and audit hooks. Scoping the security requirements up front adds little overhead and prevents the integration from stalling at the final review.
+- **Adds cost or complexity**: Teams that are not familiar with OAuth flows or enterprise secrets management. These patterns require coordination with security or IT teams in most regulated organizations, and the timeline needs to account for that.
+- **Use a different approach**: A prototype or proof of concept that will never see production data. The full enterprise integration checklist is not warranted for a demo-only integration but applying the environment variable habit for secrets costs nothing and is good practice.
