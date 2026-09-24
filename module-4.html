@@ -114,6 +114,13 @@
       }
       .toc-sub a { color: var(--muted); font-size: 0.82rem; }
       .toc a:hover, .toc a:focus { color: var(--accent); text-decoration: underline; }
+      .toc a[aria-current="location"] {
+        color: var(--accent);
+        font-weight: 700;
+        text-decoration: underline;
+        text-decoration-thickness: 2px;
+        text-underline-offset: 3px;
+      }
       main#content h1 { font-size: clamp(1.6rem, 3vw, 2.1rem); margin: 0 0 24px; letter-spacing: -0.01em; }
       main#content h2 { font-size: 1.35rem; margin: 40px 0 14px; border-top: 1px solid var(--border); padding-top: 28px; }
       main#content h2:first-of-type { border-top: none; padding-top: 0; }
@@ -305,15 +312,8 @@ def instrumented_call(make_call, step_name):
 <p>Once every call logs those three metrics, a cost or latency problem stops being a mystery on the invoice and becomes a row you can sort.</p>
 <p>The value of per-call instrumentation is that it changes the questions you can answer. A cost spike without per-call logging gives you one question: why is the bill high? Per-call logging lets you ask which step, on which request type, is responsible, and retrieve the answer from the data directly. A flow that appears uniformly expensive often turns out to have one step doing ninety percent of the spend, and that step is where every optimization dollar should go. The same is true for latency: the slow step is rarely the one you expected, and the trace plus per-call timing tells you which it is instead of letting you optimize the wrong thing.</p>
 <h3 id="the-levers-that-affect-the-budget">The levers that affect the budget</h3>
-<p>A cost or latency problem almost always traces to one of a few measurable components. Identifying the lever before tuning it is what keeps optimization from being guesswork. Select each tab for the lever and how it moves cost or latency.</p>
-<h4 id="model-selection">Model selection</h4>
-<p>Model selection for the task: Choose a smaller, faster model to cut down on the cost and latency of a more sophisticated one. Reserve the most capable model for the steps that need it, and route simpler work elsewhere.</p>
-<h4 id="prompt-context-size">Prompt &amp; context size</h4>
-<p>Prompt and context size: Every token in the prompt contributes to cost. Trimming context and removing unnecessary tool output reduces the per-call cost directly. This is the context-engineering work from the first module applied to the operational cost.</p>
-<h4 id="number-of-tool-calls">Number of tool calls</h4>
-<p>Number of tool calls: Each call adds both cost and latency. A flow that makes more calls than is needed is a common and measurable source of unnecessary spending, one that becomes visible the moment you instrument a call.</p>
-<h4 id="streamed-vs-batched">Streamed vs. batched</h4>
-<p>Streamed versus batched output, and prompt caching for repeated context: streaming changes how latency is perceived by returning the first token to the user as soon as it is ready rather than waiting for the full response. For a user-facing feature, this matters: a response that starts arriving in 300ms feels faster than one that delivers the same content in a single block after two seconds, even if the total generation time is identical. Prompt caching is covered in its own section below.</p>
+<p>A cost or latency problem almost always traces to one of a few measurable components. Identifying the lever before tuning it is what keeps optimization from being guesswork.</p>
+<div class="table-wrap"><table><thead><tr><th>Lever</th><th>Effect on cost or latency</th><th>How to use it</th></tr></thead><tbody><tr><td>Model selection</td><td>A more sophisticated model generally costs more and responds more slowly.</td><td>Choose a smaller, faster model for simpler work. Reserve the most capable model for the steps that need it.</td></tr><tr><td>Prompt and context size</td><td>Every prompt token contributes to cost.</td><td>Trim context and remove unnecessary tool output to reduce per-call cost directly. This is context engineering applied to operational cost.</td></tr><tr><td>Number of tool calls</td><td>Each call adds both cost and latency.</td><td>Instrument calls to find flows making more calls than needed, then remove the unnecessary ones.</td></tr><tr><td>Streamed versus batched output</td><td>Streaming improves perceived latency by returning the first token immediately, even when total generation time is unchanged. A response that starts in 300ms feels faster than the same content arriving as one block after two seconds.</td><td>Stream user-facing output when time to first token matters. Use prompt caching for repeated context as covered below.</td></tr></tbody></table></div>
 <h4 id="streaming-with-tool-use">Streaming with tool use</h4>
 <p>Streaming with tool use requires additional handling. In a non-streaming call, the full response arrives as a single object and tool_use blocks are directly accessible. In a streaming call, the response arrives as a sequence of server-sent events and tool_use blocks accumulate across multiple delta events before they are complete. Consuming the stream without accounting for this produces partial tool inputs and silent downstream failures</p>
 <p>The pattern is to accumulate deltas by index until the stream closes, then reconstruct the tool calls from the completed blocks:</p>
@@ -486,6 +486,37 @@ def pre_tool_use(event):
       if (new URLSearchParams(location.search).get('from') === 'results') {
         document.getElementById('backLink').href = 'index.html?view=results';
       }
+
+      const tocLinks = [...document.querySelectorAll('.toc a[href^="#"]')];
+      const tocLinksById = new Map(tocLinks.map((link) => [link.hash.slice(1), link]));
+      const headings = [...document.querySelectorAll('main#content h2[id], main#content h3[id]')];
+      let activeHeadingId = '';
+
+      function setActiveTocLink(headingId) {
+        if (headingId === activeHeadingId || !tocLinksById.has(headingId)) return;
+        const previousLink = tocLinksById.get(activeHeadingId);
+        if (previousLink) previousLink.removeAttribute('aria-current');
+        tocLinksById.get(headingId).setAttribute('aria-current', 'location');
+        activeHeadingId = headingId;
+      }
+
+      function updateActiveTocLink() {
+        const visibleHeading = headings.find((heading) => {
+          const bounds = heading.getBoundingClientRect();
+          return bounds.top >= 0 && bounds.top < window.innerHeight * 0.45;
+        });
+        const passedHeading = [...headings].reverse().find((heading) => heading.getBoundingClientRect().top <= 0);
+        const activeHeading = visibleHeading || passedHeading || headings[0];
+        if (activeHeading) setActiveTocLink(activeHeading.id);
+      }
+
+      let scrollFrame;
+      window.addEventListener('scroll', () => {
+        cancelAnimationFrame(scrollFrame);
+        scrollFrame = requestAnimationFrame(updateActiveTocLink);
+      }, { passive: true });
+      window.addEventListener('resize', updateActiveTocLink);
+      updateActiveTocLink();
     </script>
   </body>
 </html>

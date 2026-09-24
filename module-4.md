@@ -289,23 +289,14 @@ The value of per-call instrumentation is that it changes the questions you can a
 
 ### The levers that affect the budget
 
-A cost or latency problem almost always traces to one of a few measurable components. Identifying the lever before tuning it is what keeps optimization from being guesswork. Select each tab for the lever and how it moves cost or latency.
+A cost or latency problem almost always traces to one of a few measurable components. Identifying the lever before tuning it is what keeps optimization from being guesswork.
 
-#### Model selection
-
-Model selection for the task: Choose a smaller, faster model to cut down on the cost and latency of a more sophisticated one. Reserve the most capable model for the steps that need it, and route simpler work elsewhere.
-
-#### Prompt & context size
-
-Prompt and context size: Every token in the prompt contributes to cost. Trimming context and removing unnecessary tool output reduces the per-call cost directly. This is the context-engineering work from the first module applied to the operational cost.
-
-#### Number of tool calls
-
-Number of tool calls: Each call adds both cost and latency. A flow that makes more calls than is needed is a common and measurable source of unnecessary spending, one that becomes visible the moment you instrument a call.
-
-#### Streamed vs. batched
-
-Streamed versus batched output, and prompt caching for repeated context: streaming changes how latency is perceived by returning the first token to the user as soon as it is ready rather than waiting for the full response. For a user-facing feature, this matters: a response that starts arriving in 300ms feels faster than one that delivers the same content in a single block after two seconds, even if the total generation time is identical. Prompt caching is covered in its own section below.
+| Lever | Effect on cost or latency | How to use it |
+| --- | --- | --- |
+| Model selection | A more sophisticated model generally costs more and responds more slowly. | Choose a smaller, faster model for simpler work. Reserve the most capable model for the steps that need it. |
+| Prompt and context size | Every prompt token contributes to cost. | Trim context and remove unnecessary tool output to reduce per-call cost directly. This is context engineering applied to operational cost. |
+| Number of tool calls | Each call adds both cost and latency. | Instrument calls to find flows making more calls than needed, then remove the unnecessary ones. |
+| Streamed versus batched output | Streaming improves perceived latency by returning the first token immediately, even when total generation time is unchanged. A response that starts in 300ms feels faster than the same content arriving as one block after two seconds. | Stream user-facing output when time to first token matters. Use prompt caching for repeated context as covered below. |
 
 #### Streaming with tool use
 

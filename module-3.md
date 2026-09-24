@@ -16,14 +16,16 @@ This sequence matters for two reasons. First, it produces better output: Claude 
 
 Permission modes control how often Claude Code stops to ask for confirmation. Each mode makes a different tradeoff between speed and oversight. The right choice depends on how well you know the codebase and how reversible the changes are.
 
-Select each tab for what that mode auto-approves, what it still gates, and its limitations.
+Compare the modes by what they auto-approve, what they still gate, and their limitations.
 
-- `default`
-- `acceptEdits`
-- `plan`
-- `auto`
-- `dontAsk`
-- `bypassPermissions`
+| Mode | Auto-approves | Still gates | Limitations |
+| --- | --- | --- | --- |
+| `default` | Reads only. Prompts before nearly every edit or command. | All file edits and shell commands require confirmation. | Safe but slow on trusted work. The baseline for any new project or unfamiliar codebase. |
+| `acceptEdits` | Reads, file edits, and common filesystem commands (mkdir, touch, rm, rmdir, mv, cp, and sed) inside the working directory. Auto-approval is scoped to paths inside the working directory, and protected paths still prompt. | All other shell commands; writes outside the working directory; writes to protected paths. | Trusted local work where shell execution still needs a human eye. Not appropriate if the agent must run scripts. |
+| `plan` | Reads only. Research and proposes; makes no edits. | All file edits and shell commands until you approve a plan. | Exploration and planning on sensitive or unfamiliar codebases. Not appropriate for tasks that must write output. |
+| `auto` | Everything, but a separate classifier reviews each action first and blocks anything that escalates beyond your request, targets unrecognized infrastructure, or appears driven by hostile or inappropriate content. | Production deploys and migrations, mass deletes, credential exfiltration, and force-push to main are blocked by default. | Reduces prompts but does not guarantee safety; this is a research preview, not a substitute for reviewing sensitive operations. Availability depends on plan, model version, and admin settings. Always verify current requirements before build. |
+| `dontAsk` | Only tools you pre-approved in an allow rule, plus read-only commands. Auto-DENIES everything else. | Every tool call not on the allow list is denied. There is no queue for confirmation. | Built for locked-down CI and scripts. It restricts well, but it is not a way to reduce friction on local interactive work. |
+| `bypassPermissions` | All tool calls. No confirmation prompts and no safety checks. | Nothing in normal operation. The standard permission checks are bypassed; only catastrophic delete commands such as rm -rf / and rm -rf ~ still trigger a last-resort prompt. | Only inside an isolated container or VM where the environment is disposable. Never on a developer workstation against a live codebase. |
 
 ### Where does the configuration live and who it applies to
 
@@ -114,7 +116,14 @@ The built-in subagents differ in what they load at startup; this difference dete
 
 Custom subagents also do not automatically see your skills. If you define a custom subagent in .claude/agents and it needs a specific skill, you must explicitly list that skill in the agent’s front matter. Built-in agents do not have preloaded skills. If a built-in agent needs skill-backed behavior, the correct path is to create a custom subagent with those skills listed in its configuration.
 
-The map below names each mechanism, what it loads, when it runs, its context cost, and what belongs in it. Use it to decide which mechanism carries a specific piece of project knowledge, since each one makes a different tradeoff between how much context it costs and how reliably it applies. Flip each card for the full picture.
+The map below names each mechanism, what it loads, when it runs, its context cost, and what belongs in it. Use it to decide which mechanism carries a specific piece of project knowledge, since each one makes a different tradeoff between how much context it costs and how reliably it applies.
+
+| Mechanism | What it loads or runs | When it applies | Context cost | What belongs in it |
+| --- | --- | --- | --- | --- |
+| `CLAUDE.md` | Project instructions appended to the prompt before the first user message. | Every session in the project. | Always consumes context, so growth can dilute important rules. | Broad project memory, testing commands, universal constraints, and conventions that change outcomes. |
+| Rules files | Additional instructions from `.claude/rules/`, optionally selected by a `paths` glob. | When Claude works with matching files; rules without `paths` load unconditionally. | Scoped rules consume context only where relevant; unscoped rules have the same always-on cost as `CLAUDE.md`. | Narrow guidance for a specific part of the codebase, such as transaction requirements for SQL files. |
+| Hooks | Commands bound to lifecycle events such as `PreToolUse`, `PostToolUse`, `SessionStart`, or `Stop`. | Deterministically when the configured event and optional matcher fire. | Runs outside the model’s decision process rather than relying on prompt context. | Enforced guardrails, formatters, tests, audit logging, initialization, cleanup, and notifications. |
+| Subagents | A separate task context that returns only its output. Built-in agents differ in whether they load `CLAUDE.md`, git status, or skills. | When Claude delegates an isolated research or implementation task. | Keeps intermediate work out of the main context, but the subagent needs required rules and skills explicitly. | Self-contained tasks; use a general-purpose or custom subagent when project constraints or skills must apply. |
 
 ## Packaging Workflows
 
@@ -218,19 +227,13 @@ A prompt is a pre-written instruction template the server exposes so a client ca
 
 ### Transport: how Claude Code talks to the server
 
-Transport is the communication channel between the MCP client and the MCP server. The right transport depends on where the server runs. Select each tab for what it is and when to use it.
+Transport is the communication channel between the MCP client and the MCP server. The right transport depends on where the server runs.
 
-#### stdio
-
-stdio runs the server as a local process on the same machine as the client. The client launches the server as a subprocess and communicates through standard input and output. This is the correct choice for a local tool, a personal script, or a development server you run on your own machine. It does not work for a server you want to share across your team or host remotely.
-
-#### HTTP
-
-HTTP is the recommended form of transport for any server that does not run locally. It connects over a standard HTTP connection and supports servers hosted on a different machine. When you register an HTTP server, you provide the URL and the client connects over the network. Shared team servers and hosted integrations use HTTP.
-
-#### SSE
-
-SSE (Server-Sent Events) is an older means of transport that predates the current HTTP transport. It has been superseded by HTTP transport and is no longer recommended for new servers. If you encounter SSE in existing configuration or documentation, treat it as a legacy option rather than a current recommendation.
+| Transport | How it works | When to use it | Limitation |
+| --- | --- | --- | --- |
+| stdio | Runs the server as a local subprocess on the same machine as the client and communicates through standard input and output. | A local tool, personal script, or development server running on your machine. | It does not work for a server you want to share across your team or host remotely. |
+| HTTP | Connects to a server on another machine over a standard HTTP connection. You register the server by providing its URL. | Any non-local server, including shared team servers and hosted integrations. | The server must be reachable over the network. |
+| SSE | Uses the older Server-Sent Events transport that predates the current HTTP transport. | Existing configurations or documentation that still rely on it. | HTTP has superseded it, so SSE is not recommended for new servers. |
 
 ### Context cost
 
@@ -335,19 +338,13 @@ These questions are not new to enterprise software; they have the same identity,
 
 ### Authentication patterns by service type
 
-The right authentication mechanism depends on where the service runs and what identity model it supports. Select each tab for the pattern and when to use it.
+The right authentication mechanism depends on where the service runs and what identity model it supports.
 
-#### Remote services with user identity
-
-Use OAuth. The MCP server returns a 401 Unauthorized to signal that authentication is required. The client initiates a browser-based sign-in flow. After the user approves access, a token is issued and stored. No one copies a secret by hand; the OAuth flow is the expected pattern for cloud services, SaaS tools, and any integration where the user’s identity is part of the authorization model. The Linear MCP server from earlier in this module uses this pattern; the GitHub server, by contrast, authenticates with a personal access token passed as a header.
-
-#### Remote services with service identity
-
-Use an API key passed through an environment variable. The key identifies the service account. The key must never be committed to a configuration file; it lives in the environment at the point of execution. For a CI pipeline using the Agent SDK, the key is injected as a secret by the pipeline runner, not baked into the code.
-
-#### Local services with file-system access
-
-stdio transport with no network authentication. The security boundary is the file-system permission model. A denying rule in the settings files is the governance layer.
+| Service type | Authentication pattern | How it works | Key constraint |
+| --- | --- | --- | --- |
+| Remote service with user identity | OAuth | The server returns a 401 Unauthorized, the client starts a browser-based sign-in flow, and a token is issued and stored after approval. This is the expected pattern for cloud services, SaaS tools, and integrations where user identity is part of authorization. | No one copies a secret by hand. Linear MCP uses this pattern; GitHub MCP instead uses a personal access token passed as a header. |
+| Remote service with service identity | API key through an environment variable | The key identifies the service account and is injected into the environment at execution time. In an Agent SDK CI pipeline, the runner injects it as a secret. | Never commit the key to a configuration file or bake it into code. |
+| Local service with file-system access | stdio with no network authentication | The file-system permission model provides the security boundary. | A deny rule in the settings files is the governance layer. |
 
 Managing the secret itself is the other half of secure authentication. A credential never travels with the configuration that references it: the config file holds only a variable reference, and the value lives in an environment variable or a managed secret store injected at the point of execution. Store service-account keys in a secret manager rather than in files, and rotate them on a schedule and immediately after any suspected exposure. If a key is leaked, you must rotate it, but remember, you cannot rotate a value baked into committed code. Scope each credential to the narrowest access its task needs, so a compromised key reaches only what that one integration required.
 

@@ -114,6 +114,13 @@
       }
       .toc-sub a { color: var(--muted); font-size: 0.82rem; }
       .toc a:hover, .toc a:focus { color: var(--accent); text-decoration: underline; }
+      .toc a[aria-current="location"] {
+        color: var(--accent);
+        font-weight: 700;
+        text-decoration: underline;
+        text-decoration-thickness: 2px;
+        text-underline-offset: 3px;
+      }
       main#content h1 { font-size: clamp(1.6rem, 3vw, 2.1rem); margin: 0 0 24px; letter-spacing: -0.01em; }
       main#content h2 { font-size: 1.35rem; margin: 40px 0 14px; border-top: 1px solid var(--border); padding-top: 28px; }
       main#content h2:first-of-type { border-top: none; padding-top: 0; }
@@ -157,7 +164,7 @@
 <p>A prompt that works once in interactive use often breaks when it runs in production against untested inputs. The fix for this isn’t just adding more words, it is identifying which structural piece is missing from the prompt and adding that one piece. This section reviews how to read a failed output, then walks through the four techniques that produce the fixes.</p>
 <h4 id="four-techniques-that-give-claude-a-reliable-output-shape">Four techniques that give Claude a reliable output shape</h4>
 <p>When a first-pass response misses, the instinct is often to add more words to the prompt and run it again. However, that instinct can make the problem harder to isolate and rarely fixes it. Rewording changes how you say something but does not add to the structural piece of the prompt that’s missing. For example, if Claude is crossing the boundary between your instructions and your input data, clearer phrasing will not fix it, and if the output format keeps drifting, "please format this correctly" will not fix it either.</p>
-<p>The failure mode tells you which of the four techniques is absent. Diagnose how your prompt is failing first, then add the specific technique that addresses that failure. The four techniques themselves are defined in full further down this screen.</p>
+<p>The failure mode tells you which of the four techniques is absent. Diagnose how your prompt is failing first, then add the specific technique that addresses that failure. The four techniques themselves are compared further down this section.</p>
 <div class="table-wrap"><table><thead><tr><th>What you observed</th><th>What the prompt is missing</th><th>Why this technique is the fix</th></tr></thead><tbody><tr><td>The result comes back in the wrong shape: a sentence where you expected a label, prose where you expected JSON.</td><td>An output constraint. The prompt never specified the form, field names, or stopping point of the response.</td><td>An output constraint controls the form of the response independent of its content. Without one, Claude returns plausible text that the downstream parser was not built to accept.</td></tr><tr><td>The content is off: scope drifts, tone shifts, or Claude answers a wider question than you asked, and it gets worse deeper into the conversation.</td><td>A system prompt, or a more specific one. The behavioral contract was too vague to hold across turns.</td><td>The system prompt sets the rules that apply to every response regardless of the user turn. When it is underspecified, there is nothing holding role, scope, and format steady as the conversation runs on.</td></tr><tr><td>The task is right, but the structure is invented: Claude understood what to do and produced output in a shape you never asked for.</td><td>Few-shot examples. Claude cannot infer an exact structure from a description alone.</td><td>Few-shot examples show the pattern rather than describe it. One correct input-output pair gives Claude the exact shape to match, which a written instruction often fails to pin down.</td></tr><tr><td>Output is clean on the inputs you tested but breaks on a variant: an edge case, an unusual field, an input you did not anticipate.</td><td>A constraint covering the variant. The prompt handles the happy path and has no rule for the case the parser breaks on.</td><td>The prompt was validated against a narrow set of inputs. Naming the variant in the constraint, or adding an example that covers it, closes the gap the test inputs never exposed.</td></tr></tbody></table></div>
 <h4 id="diagnosing-a-classification-prompt-that-returns-the-wrong-output-shape">Diagnosing a classification prompt that returns the wrong output shape</h4>
 <p>The rule is simple: name the failure, add the one technique that matches it, and re-run it. If it still fails, diagnose again. When a prompt keeps getting longer with every pass, that’s the sign you’re skipping the diagnosis step and just adding words.</p>
@@ -182,10 +189,8 @@ User: &lt;ticket&gt;I was charged twice for the same month.&lt;/ticket&gt;</code
 <p>The table below shows how we can stack all the four techniques together, where the prompt should be simplified, and where we should diagnose before adding more before too many iterations.</p>
 <div class="table-wrap"><table><thead><tr><th>Approach</th><th>Use it for</th><th>Avoid it when</th></tr></thead><tbody><tr><td>Stack all four techniques</td><td>Stacking all four techniques against a clearly defined output contract.</td><td>Tasks with well-specified formats and edge cases that can be covered by examples.</td></tr><tr><td>Simplify the prompt</td><td>Adding all four techniques to a simple task that only needs one.</td><td>A "summarize this paragraph" prompt does not need few-shot examples and an output schema.</td></tr><tr><td>Diagnose before adding more</td><td>Prompts that are growing longer with each iteration rather than more precise.</td><td>If you have re-prompted five times and the output is still wrong, diagnose the failure type before adding more text.</td></tr></tbody></table></div>
 <h4 id="when-to-reach-for-each-technique">When to reach for each technique</h4>
-<p>Now, let’s understand more about each of these techniques and when each one applies:</p>
-<ul><li>System prompts</li><li>XML tags</li><li>Few-shot examples</li><li>Output constraints</li></ul>
-<h4 id="system-prompts">System prompts</h4>
-<p>System prompts carry the behavioral contract for the whole session. Write them once and treat them as your persistent instruction layer. They define Claude’s role, the output format, and any rules that must not change between conversations.</p>
+<p>Each technique controls a different part of the prompt. Choose the one that matches the failure instead of adding all four by default.</p>
+<div class="table-wrap"><table><thead><tr><th>Technique</th><th>Reach for it when</th><th>What it contributes</th></tr></thead><tbody><tr><td>System prompts</td><td>Claude’s role, scope, tone, or rules drift across turns.</td><td>A persistent behavioral contract for the whole session, including rules and output requirements that must not change between conversations.</td></tr><tr><td>XML tags</td><td>Claude is crossing boundaries between instructions, examples, and input data.</td><td>Explicit delimiters that identify where each prompt component starts and ends, so content is not mistaken for instruction.</td></tr><tr><td>Few-shot examples</td><td>Claude understands the task but invents the structure, casing, or pattern.</td><td>Concrete input-output pairs that demonstrate the exact result to imitate.</td></tr><tr><td>Output constraints</td><td>The content is correct but its shape varies or breaks a downstream parser.</td><td>An explicit contract for allowed values, field names, response form, and what must not be returned.</td></tr></tbody></table></div>
 <h4 id="the-iteration-loop-diagnosing-before-re-prompting">The iteration loop: Diagnosing before re-prompting</h4>
 <p>When a first-pass response misses the mark, the instinct is to add more words to the prompt and try again. That instinct almost always makes the problem harder to diagnose and rarely fixes it.</p>
 <p>Instead, diagnose the problem first, and then re-prompt based on your findings. The failure type tells you which technique is missing:</p>
@@ -241,8 +246,7 @@ User: &lt;ticket&gt;I was charged twice for the same month.&lt;/ticket&gt;</code
 <h3 id="how-the-tool-use-loop-works">How the tool-use loop works</h3>
 <p>The most common misconception about tool-use is that Claude runs the tools. Instead, Claude reads your tool definitions, decides which one fits the situation, and tells your application what to call it along with the required inputs. Your application executes the tool, gets the result, and sends it back; then Claude uses that result to continue.</p>
 <p>This back-and-forth shouldn’t be ignored in production: if your application does not handle the return correctly, Claude never gets the data it asked for, and the loop breaks. The boundary between what Claude owns and what your code owns is where most tool-use bugs live. Here is the sequence to ensure proper implementation of tool-use.</p>
-<p>Click each step to see what happens:</p>
-<ol><li>Define schema</li><li>Send message</li><li>Tool use block</li><li>Execute tool</li><li>Return result</li><li>Claude continues, using the tool result as context for its next response, either another tool-use block or a final end turn.</li></ol>
+<div class="table-wrap"><table><thead><tr><th>Step</th><th>Owner</th><th>What happens</th></tr></thead><tbody><tr><td>1. Define the schema</td><td>Your application</td><td>Define each tool’s name, description, and input schema so Claude can decide when and how to call it.</td></tr><tr><td>2. Send the message</td><td>Your application</td><td>Send the user message and tool definitions to Claude.</td></tr><tr><td>3. Receive a <code>tool_use</code> block</td><td>Claude</td><td>Claude selects a tool and returns its name, unique call ID, and input arguments.</td></tr><tr><td>4. Execute the tool</td><td>Your application</td><td>Run the selected function with the supplied arguments and capture its result or error.</td></tr><tr><td>5. Return a <code>tool_result</code> block</td><td>Your application</td><td>Send the result in the immediately following user turn, using the same call ID.</td></tr><tr><td>6. Continue</td><td>Claude</td><td>Use the tool result as context for the next response, which may contain another tool call or a final answer.</td></tr></tbody></table></div>
 <p>It’s important to note that the loop is not automatic and you need to complete the fourth step. If the miss is systematic, the fix is in the schema definition step.</p>
 <h4 id="message-block-structure-in-a-tool-use-conversation">Message block structure in a tool-use conversation</h4>
 <p>A tool-use conversation is built out of structured blocks, not plain text. Each assistant turn and user turn is a list of blocks, and four block types do the work in a tool-use session. A text block carries Claude’s prose response. A tool_use block carries a tool call, including the tool name, a unique ID, and the input arguments. A tool_result block carries what your code returned after running the tool. A thinking block carries Claude’s internal reasoning, and it only appears when extended thinking is enabled.</p>
@@ -526,6 +530,37 @@ Senior Developer: "Right. One to say when to use it, one to say when not to. Tha
       if (new URLSearchParams(location.search).get('from') === 'results') {
         document.getElementById('backLink').href = 'index.html?view=results';
       }
+
+      const tocLinks = [...document.querySelectorAll('.toc a[href^="#"]')];
+      const tocLinksById = new Map(tocLinks.map((link) => [link.hash.slice(1), link]));
+      const headings = [...document.querySelectorAll('main#content h2[id], main#content h3[id]')];
+      let activeHeadingId = '';
+
+      function setActiveTocLink(headingId) {
+        if (headingId === activeHeadingId || !tocLinksById.has(headingId)) return;
+        const previousLink = tocLinksById.get(activeHeadingId);
+        if (previousLink) previousLink.removeAttribute('aria-current');
+        tocLinksById.get(headingId).setAttribute('aria-current', 'location');
+        activeHeadingId = headingId;
+      }
+
+      function updateActiveTocLink() {
+        const visibleHeading = headings.find((heading) => {
+          const bounds = heading.getBoundingClientRect();
+          return bounds.top >= 0 && bounds.top < window.innerHeight * 0.45;
+        });
+        const passedHeading = [...headings].reverse().find((heading) => heading.getBoundingClientRect().top <= 0);
+        const activeHeading = visibleHeading || passedHeading || headings[0];
+        if (activeHeading) setActiveTocLink(activeHeading.id);
+      }
+
+      let scrollFrame;
+      window.addEventListener('scroll', () => {
+        cancelAnimationFrame(scrollFrame);
+        scrollFrame = requestAnimationFrame(updateActiveTocLink);
+      }, { passive: true });
+      window.addEventListener('resize', updateActiveTocLink);
+      updateActiveTocLink();
     </script>
   </body>
 </html>

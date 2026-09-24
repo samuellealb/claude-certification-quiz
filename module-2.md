@@ -10,7 +10,7 @@ A prompt that works once in interactive use often breaks when it runs in product
 
 When a first-pass response misses, the instinct is often to add more words to the prompt and run it again. However, that instinct can make the problem harder to isolate and rarely fixes it. Rewording changes how you say something but does not add to the structural piece of the prompt that’s missing. For example, if Claude is crossing the boundary between your instructions and your input data, clearer phrasing will not fix it, and if the output format keeps drifting, "please format this correctly" will not fix it either.
 
-The failure mode tells you which of the four techniques is absent. Diagnose how your prompt is failing first, then add the specific technique that addresses that failure. The four techniques themselves are defined in full further down this screen.
+The failure mode tells you which of the four techniques is absent. Diagnose how your prompt is failing first, then add the specific technique that addresses that failure. The four techniques themselves are compared further down this section.
 
 | What you observed | What the prompt is missing | Why this technique is the fix |
 | --- | --- | --- |
@@ -63,16 +63,14 @@ The table below shows how we can stack all the four techniques together, where t
 
 #### When to reach for each technique
 
-Now, let’s understand more about each of these techniques and when each one applies:
+Each technique controls a different part of the prompt. Choose the one that matches the failure instead of adding all four by default.
 
-- System prompts
-- XML tags
-- Few-shot examples
-- Output constraints
-
-#### System prompts
-
-System prompts carry the behavioral contract for the whole session. Write them once and treat them as your persistent instruction layer. They define Claude’s role, the output format, and any rules that must not change between conversations.
+| Technique | Reach for it when | What it contributes |
+| --- | --- | --- |
+| System prompts | Claude’s role, scope, tone, or rules drift across turns. | A persistent behavioral contract for the whole session, including rules and output requirements that must not change between conversations. |
+| XML tags | Claude is crossing boundaries between instructions, examples, and input data. | Explicit delimiters that identify where each prompt component starts and ends, so content is not mistaken for instruction. |
+| Few-shot examples | Claude understands the task but invents the structure, casing, or pattern. | Concrete input-output pairs that demonstrate the exact result to imitate. |
+| Output constraints | The content is correct but its shape varies or breaks a downstream parser. | An explicit contract for allowed values, field names, response form, and what must not be returned. |
 
 #### The iteration loop: Diagnosing before re-prompting
 
@@ -200,14 +198,14 @@ The most common misconception about tool-use is that Claude runs the tools. Inst
 
 This back-and-forth shouldn’t be ignored in production: if your application does not handle the return correctly, Claude never gets the data it asked for, and the loop breaks. The boundary between what Claude owns and what your code owns is where most tool-use bugs live. Here is the sequence to ensure proper implementation of tool-use.
 
-Click each step to see what happens:
-
-1. Define schema
-2. Send message
-3. Tool use block
-4. Execute tool
-5. Return result
-6. Claude continues, using the tool result as context for its next response, either another tool-use block or a final end turn.
+| Step | Owner | What happens |
+| --- | --- | --- |
+| 1. Define the schema | Your application | Define each tool’s name, description, and input schema so Claude can decide when and how to call it. |
+| 2. Send the message | Your application | Send the user message and tool definitions to Claude. |
+| 3. Receive a `tool_use` block | Claude | Claude selects a tool and returns its name, unique call ID, and input arguments. |
+| 4. Execute the tool | Your application | Run the selected function with the supplied arguments and capture its result or error. |
+| 5. Return a `tool_result` block | Your application | Send the result in the immediately following user turn, using the same call ID. |
+| 6. Continue | Claude | Use the tool result as context for the next response, which may contain another tool call or a final answer. |
 
 It’s important to note that the loop is not automatic and you need to complete the fourth step. If the miss is systematic, the fix is in the schema definition step.
 

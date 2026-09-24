@@ -114,6 +114,13 @@
       }
       .toc-sub a { color: var(--muted); font-size: 0.82rem; }
       .toc a:hover, .toc a:focus { color: var(--accent); text-decoration: underline; }
+      .toc a[aria-current="location"] {
+        color: var(--accent);
+        font-weight: 700;
+        text-decoration: underline;
+        text-decoration-thickness: 2px;
+        text-underline-offset: 3px;
+      }
       main#content h1 { font-size: clamp(1.6rem, 3vw, 2.1rem); margin: 0 0 24px; letter-spacing: -0.01em; }
       main#content h2 { font-size: 1.35rem; margin: 40px 0 14px; border-top: 1px solid var(--border); padding-top: 28px; }
       main#content h2:first-of-type { border-top: none; padding-top: 0; }
@@ -282,6 +289,37 @@ model = "claude-haiku-4-5-20251001"</code></pre>
       if (new URLSearchParams(location.search).get('from') === 'results') {
         document.getElementById('backLink').href = 'index.html?view=results';
       }
+
+      const tocLinks = [...document.querySelectorAll('.toc a[href^="#"]')];
+      const tocLinksById = new Map(tocLinks.map((link) => [link.hash.slice(1), link]));
+      const headings = [...document.querySelectorAll('main#content h2[id], main#content h3[id]')];
+      let activeHeadingId = '';
+
+      function setActiveTocLink(headingId) {
+        if (headingId === activeHeadingId || !tocLinksById.has(headingId)) return;
+        const previousLink = tocLinksById.get(activeHeadingId);
+        if (previousLink) previousLink.removeAttribute('aria-current');
+        tocLinksById.get(headingId).setAttribute('aria-current', 'location');
+        activeHeadingId = headingId;
+      }
+
+      function updateActiveTocLink() {
+        const visibleHeading = headings.find((heading) => {
+          const bounds = heading.getBoundingClientRect();
+          return bounds.top >= 0 && bounds.top < window.innerHeight * 0.45;
+        });
+        const passedHeading = [...headings].reverse().find((heading) => heading.getBoundingClientRect().top <= 0);
+        const activeHeading = visibleHeading || passedHeading || headings[0];
+        if (activeHeading) setActiveTocLink(activeHeading.id);
+      }
+
+      let scrollFrame;
+      window.addEventListener('scroll', () => {
+        cancelAnimationFrame(scrollFrame);
+        scrollFrame = requestAnimationFrame(updateActiveTocLink);
+      }, { passive: true });
+      window.addEventListener('resize', updateActiveTocLink);
+      updateActiveTocLink();
     </script>
   </body>
 </html>
