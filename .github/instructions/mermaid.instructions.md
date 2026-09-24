@@ -1,5 +1,6 @@
 ---
-applyTo: "**"
+name: "Mermaid Diagrams"
+description: "Use when creating, editing, validating, previewing, or visualizing Mermaid diagrams and .mmd files."
 ---
 # Mermaid AI Skills
 
