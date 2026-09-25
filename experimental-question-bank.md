@@ -1,0 +1,281 @@
+# Experimental Question Bank
+
+Source: [Claude Certification Guide](https://claudecertificationguide.com/)
+
+Scraped on 24 September 2026 from the public diagnostic question payload. The
+source exposed 257 items across five domains. This derived bank preserves the
+source item IDs and topic coverage, but summarizes each correct principle in
+original language rather than reproducing the site's stems, distractors, or
+explanations verbatim.
+
+## Domain 1: Agentic Architecture & Orchestration
+
+- **q-1-1-001 - Loop completion signal:** Inspect `stop_reason`, continuing on `tool_use` and terminating on `end_turn`.
+- **q-1-2-001 - Complete decomposition:** Ensure the coordinator assigns every required topic rather than leaving coverage gaps for otherwise capable subagents.
+- **q-1-3-001 - Source metadata preservation:** Pass structured attribution data such as source URLs and document names into synthesis.
+- **q-1-4-001 - Refund prerequisite gate:** Block `process_refund` programmatically until `get_customer` returns a verified customer ID.
+- **q-1-5-001 - AML enforcement:** Use a `PreToolUse` hook to prevent an international transfer until AML verification passes.
+- **q-1-6-001 - Large review decomposition:** Run scoped per-file analysis followed by a separate cross-file integration pass.
+- **q-1-7-001 - Stale-session recovery:** Begin a fresh session with prior findings summarized and changed files identified for targeted re-analysis.
+- **q-1-1-002 - Primary loop control:** Let `stop_reason` govern termination and retain the iteration cap only as a runaway-loop backstop.
+- **q-1-2-002 - Selective orchestration:** Have the coordinator invoke only the subagents needed for each query.
+- **q-1-3-002 - Parallel subagent spawning:** Emit independent `Task` tool calls in one response so their work runs concurrently.
+- **q-1-4-002 - Actionable human handoff:** Include both the customer ID and root cause so the recipient can access the account and understand the issue.
+- **q-1-5-002 - Date normalization:** Apply a `PostToolUse` hook that converts backend date values to ISO 8601 before model processing.
+- **q-1-6-002 - Adaptive legacy analysis:** Map the codebase, prioritize high-impact areas, and revise the plan as dependencies emerge.
+- **q-1-7-002 - Competing hypothesis branches:** Use `fork_session` to create independent explorations from the same analysis baseline.
+- **q-1-3-003 - Subagent invocation permission:** Add the `Task` tool, now named `Agent` in current Claude Code, to the coordinator's `allowedTools`.
+- **q-1-4-003 - Multi-concern resolution:** Separate the concerns, investigate them in parallel with shared context, and combine the results into one resolution.
+- **q-1-1-003 - Finished-turn indicator:** Treat `stop_reason='end_turn'` as confirmation that no further tool calls are required.
+- **q-1-1-004 - Iteration cap purpose:** Use the cap to stop runaway execution, not as the normal completion mechanism.
+- **q-1-2-003 - Hub-and-spoke communication:** Route every inter-agent exchange through the coordinator rather than allowing direct subagent communication.
+- **q-1-5-011 - Result-processing hook:** Use `PostToolUse` for logic that runs after tool execution and before the model consumes the result.
+- **q-1-3-012 - Agent tool scoping:** Configure an `AgentDefinition.tools` set that grants only the capabilities required by that role.
+- **q-1-3-014 - Subagent memory isolation:** Expect only explicitly returned results to reach the coordinator, not the subagent's internal memory.
+- **q-1-7-003 - Session forking:** Use `fork_session` for divergent independent work that shares an initial baseline.
+- **q-1-4-010 - Escalation payload:** Provide the customer ID, conversation summary, root-cause analysis, and recommended action.
+- **q-1-5-012 - Credit-card redaction:** Regex-redact card numbers from tool results in a `PostToolUse` hook before model access.
+- **q-1-6-007 - Dependent-stage orchestration:** Use a pipeline that passes each stage's output into the next stage in sequence.
+- **q-1-3-015 - Full context transfer:** Give synthesis the complete structured research output instead of a lossy summary that invites unsupported gap-filling.
+- **q-1-5-013 - Destructive-operation guardrails:** Use `PreToolUse` hooks to reject dangerous shell patterns and out-of-scope file paths before execution.
+- **q-1-3-013 - Specialist definitions:** Create separate specialists with four or five scoped tools each and equip the coordinator with `Task` for delegation.
+- **q-1-7-004 - Refresh after external changes:** Start a summarized fresh session and reread changed files before making further recommendations.
+- **q-1-5-015 - Human-approved deletion:** Pause `delete_account` in a `PreToolUse` hook and send it through a human approval queue before proceeding.
+- **q-1-4-009 - Budget-aware degradation:** When budget is nearly exhausted during `tool_use`, summarize completed work and escalate to a human.
+- **q-1-2-005 - Partial-failure coordination:** Retry failed work, preserve usable partial findings, mark missing data as gaps, and synthesize all available results.
+- **q-1-3-016 - Collection-tool isolation:** Remove `web_search` from the analysis agent so data acquisition remains owned by the collection agent.
+- **q-1-7-005 - Clean-context strategy change:** Start anew with a summary of failed approaches and their failure reasons before pursuing the alternative.
+- **q-1-4-011 - Genuine ambiguity escalation:** Hand both defensible interpretations and their evidence to a human specialist instead of choosing under low confidence.
+- **q-1-4-006 - Dependency-aware sequencing:** Complete code review first, then generate tests and documentation in parallel against the reviewed code.
+- **q-1-3-017 - Focused search-agent tools:** Retain only four or five data-fetching tools and assign summarization or sentiment work to analysis specialists.
+- **q-1-2-006 - Dimension-based comparison:** Run parallel tracks for each comparison dimension, covering both alternatives consistently before synthesis.
+- **q-1-5-014 - Proportional guardrails:** Enforce nonrecoverable directory boundaries with hooks while leaving recoverable backup behavior as prompt guidance.
+- **q-1-1-006 - Structured loop termination:** Replace phrase parsing with `stop_reason`, exiting on `end_turn` and continuing on `tool_use`.
+- **q-1-2-007 - Migration context propagation:** Inject renamed-schema details from the migration agent when delegating dependent test updates.
+- **q-1-6-008 - Scoped delegation:** Avoid loading dozens of files into one context by assigning bounded portions of the extraction to specialist subagents.
+- **q-1-5-007 - Package-name normalization:** Inspect written files in a `PostToolUse` hook and normalize declarations to `com.company.service.<service-name>`.
+- **q-1-4-012 - Rollback prerequisite:** Programmatically block `DROP` or `ALTER TABLE DROP` until rollback verification succeeds.
+- **q-1-7-006 - Named-session continuation:** Use `--resume` to recover the prior conversation and its mapped call-site context.
+- **q-1-2-008 - Explicit cross-agent context:** Have the coordinator inject schema-migration output because subagents cannot inherit one another's memory.
+- **q-1-2-011 - Delegation proportionality:** Delegate the broad 60-file rename with scoped context while handling the small endpoint change directly.
+- **q-1-5-008 - Completion-time hook placement:** Check for the Dockerfile at deployment or merge, when service completeness can be enforced accurately.
+- **q-1-7-007 - Parallel design explorations:** Fork the baseline session once per decomposition strategy so both analyses remain independent.
+- **q-1-1-007 - Moderation loop lifecycle:** Continue when `stop_reason` is `tool_use` and finish when it is `end_turn`.
+- **q-1-1-008 - Context-sensitive decisions:** Let the model weigh each post's full context instead of forcing actions through a rigid decision tree.
+- **q-1-2-009 - Hub isolation enforcement:** Limit the image agent to analysis tools and return its findings to the coordinator for action routing.
+- **q-1-3-010 - Multimodal parallel delegation:** Send text and image work to their respective specialists concurrently, then aggregate both judgments.
+- **q-1-4-007 - Confidence-based moderation:** Auto-remove high-confidence violations, auto-approve high-confidence safe content, and escalate uncertain cases.
+- **q-1-7-008 - Independent appeal review:** Use a separate agent instance with only the disputed content and appeal justification, excluding the original reasoning.
+- **q-1-5-009 - Unicode result normalization:** Normalize homoglyphs in a `PostToolUse` hook before the model receives classification output.
+- **q-1-5-010 - Political-speech approval gate:** Block removal of `political_speech` in a `PreToolUse` hook and redirect it to human review.
+- **q-1-2-010 - Specialist isolation:** Restore separate text-only and image-analysis agents with narrowly scoped tool sets.
+- **q-1-3-011 - Independent batch parallelism:** Distribute unrelated posts across parallel subagent instances and aggregate results as they finish.
+- **q-1-1-009 - Tool-result history:** Append each tool result as a new message and send the complete updated conversation on the next model call.
+- **q-1-2-012 - Iterative synthesis refinement:** Identify unsupported or missing portions, delegate targeted follow-ups, and synthesize again with the added evidence.
+- **q-1-3-018 - Goal-oriented delegation:** Specify the outcome and quality constraints while allowing the specialist to choose its implementation path.
+- **q-1-2-013 - Coordinator responsibilities:** Select subagents by query complexity, mediate all communication, aggregate results, and redelegate focused gap-filling work.
+- **q-1-6-009 - Dynamic decomposition signals:** Adapt decomposition when useful subtasks emerge from intermediate findings or the unfamiliar work is open-ended.
+
+## Domain 2: Tool Design & MCP Integration
+
+- **q-2-1-001 - Distinct tool descriptions:** Expand each description with input formats, example queries, edge cases, and boundaries that distinguish similar tools.
+- **q-2-2-001 - Empty-result semantics:** Distinguish access failures from valid empty results so a legitimate no-match response is not retried.
+- **q-2-3-001 - Scoped fact verification:** Give the synthesis agent a scoped `verify_fact` tool for simple lookups and escalate only complex checks to the coordinator.
+- **q-2-4-001 - Jira MCP integration:** Evaluate existing community Jira MCP servers before building a custom server for unsupported team-specific workflows.
+- **q-2-5-001 - Caller and test discovery:** Use Grep to find `processLegacyOrder` callers, then use Glob to match their test files by name.
+- **q-2-1-002 - Prompt keyword collision:** Rephrase the system prompt to remove wording that unintentionally overlaps with `analyze_content`.
+- **q-2-2-002 - Non-retryable business errors:** Return `errorCategory: 'business'`, `isRetryable: false`, and a customer-friendly description of the policy limit.
+- **q-2-3-002 - Role-scoped agents:** Split a broadly equipped agent into specialized agents with four or five tools each.
+- **q-2-4-002 - CRM tool discoverability:** Expand the CRM tool description to identify its complete customer records and structured output.
+- **q-2-5-002 - Non-unique Edit recovery:** Read the full file and then Write the complete modified content when Edit cannot identify a unique match.
+- **q-2-3-003 - Mandatory metadata extraction:** Force `extract_metadata` with `tool_choice` on the first turn, then restore `tool_choice: 'auto'` for later turns.
+- **q-2-1-003 - Tool-selection signal:** The model primarily uses tool descriptions to match a task with the appropriate tool.
+- **q-2-4-011 - MCP message format:** MCP uses JSON-RPC 2.0 for structured request-response messaging.
+- **q-2-4-009 - Shared MCP configuration:** Store team-wide server configuration in the repository's project-level `.mcp.json`.
+- **q-2-2-009 - Error categories:** Use the named categories `transient`, `validation`, `business`, and `permission` for `errorCategory`.
+- **q-2-5-003 - Content pattern search:** Use Grep to search file contents with regular-expression text patterns.
+- **q-2-3-010 - Tool-count guideline:** Limit each agent to four or five tools to maintain reliable selection.
+- **q-2-2-004 - Transient timeout response:** Set `isError` to true and return `errorCategory: 'transient'`, `isRetryable: true`, and a timeout description.
+- **q-2-1-005 - Profile-first routing:** Describe `get_customer_profile` as the default for general customer information and reserve `get_customer_orders` for order-specific requests.
+- **q-2-4-010 - Environment-specific routing:** Give the staging tool a distinct name and environment-specific description, then add a session rule that prioritizes staging tools.
+- **q-2-2-010 - Successful no-match handling:** Treat a successful query with no records as a valid empty result rather than a failure.
+- **q-2-5-004 - Repeated in-file rename:** Use Edit with `replace_all: true` to replace every `userData` occurrence with `customerData` in the file.
+- **q-2-2-005 - Rate-limit recovery:** Return `errorCategory: 'transient'`, `isRetryable: true`, and `retryAfterMs` so the agent waits before retrying.
+- **q-2-1-006 - Action-versus-information boundaries:** Describe both tools so executing a cancellation is distinct from learning how cancellation works.
+- **q-2-3-006 - Mandatory first-turn report:** Force `generate_report` with `tool_choice` on turn one, then switch to `tool_choice: 'auto'`.
+- **q-2-2-006 - Failure classification:** Classify HTTP 503 as retryable `transient`, restricted access as non-retryable `business`, and malformed DOI input as non-retryable `validation`.
+- **q-2-5-005 - Error-source investigation:** Grep for `InvalidStateTransition` across the codebase, then Read the matching files.
+- **q-2-4-005 - Per-developer credentials:** Configure the shared server in `.mcp.json` with `${TICKETING_API_TOKEN}` expansion so each developer supplies a personal token.
+- **q-2-4-006 - Structured query advantages:** Describe `query_database` with its typed structured results and pagination advantages over Bash.
+- **q-2-4-007 - Selective custom integration:** Use community MCP servers for PostgreSQL and Slack, and build a custom server only for the unmatched internal approval workflow.
+- **q-2-5-006 - Endpoint migration sequence:** Grep for `/api/v1/users/create`, then use Edit to replace each located reference with `/api/v2/users`.
+- **q-2-5-007 - Ambiguous Edit recovery:** Read the complete file and use Write to emit the full modified content after a non-unique Edit match.
+- **q-2-1-007 - System-prompt steering:** Remove broad billing language that biases refund requests toward `adjust_billing` despite differentiated tool descriptions.
+- **q-2-1-008 - Purpose-specific tools:** Replace generic `analyze_content` behavior with narrowly scoped `extract_web_results`, `parse_document`, and `analyze_code` tools.
+- **q-2-3-007 - Data-platform role scoping:** Separate query, transformation, and export responsibilities into specialized agents with small tool sets.
+- **q-2-1-009 - Sparse-description risk:** Include data-source boundaries, input formats, examples, and conditions to prevent queries from reaching the wrong backend.
+- **q-2-1-010 - SQL dialect requirement:** State that `query_snowflake` accepts Snowflake SQL rather than PostgreSQL syntax.
+- **q-2-2-007 - Retry-aware error structure:** Add structured categories so transient overloads are retried while permanent failures such as missing tables are not.
+- **q-2-3-008 - Transformation consolidation:** Replace 19 specialized transformation tools with one `transform_data` tool controlled by a `transform_type` parameter.
+- **q-2-3-009 - Selection degradation threshold:** Keep agents to four or five tools because substantially larger sets sharply reduce selection accuracy.
+- **q-2-4-008 - MCP configuration scope:** Put shared Snowflake and PostgreSQL servers in `.mcp.json` and personal integrations in `~/.claude.json`.
+- **q-2-5-008 - Reference and migration search:** Grep for `fact_revenue_daily`, then Glob for `**/migrations/*.sql`.
+- **q-2-2-008 - Permission-versus-empty distinction:** Signal an expired API key as an access failure instead of presenting it as a valid empty result.
+- **q-2-4-012 - Schema discovery resources:** Expose the table catalogue and column schemas as MCP resources for upfront visibility.
+- **q-2-1-011 - Federated search routing:** Use distinct tool names, remove prompt keyword collisions, and describe each tool's purpose, inputs, outputs, and preference boundaries.
+- **q-2-2-011 - Structured failure context:** Return partial results, the failure type, and the attempted operation including the failed query.
+
+## Domain 3: Claude Code Configuration & Workflows
+
+- **q-3-1-001 - Shared configuration scope:** Team conventions belong in project-level configuration rather than a developer's user-level `CLAUDE.md`.
+- **q-3-2-001 - Shared commands and personal skills:** Store `/review` in `.claude/commands/` and define `/brainstorm` in `~/.claude/skills/SKILL.md` with `context: fork`.
+- **q-3-3-001 - Test-file path rules:** Put test conventions in a `.claude/rules/` file scoped with `paths: ["**/*.test.tsx", "**/*.test.ts"]`.
+- **q-3-4-001 - Mode selection by complexity:** Use plan mode for architectural restructuring and broad migrations, but execute a clear single-function fix directly.
+- **q-3-5-001 - Concrete transformation examples:** Supply two or three exact input/output examples when prose alone produces inconsistent transformations.
+- **q-3-6-001 - Non-interactive CI execution:** Invoke Claude Code with `claude -p "Analyse this PR"` in a pipeline.
+- **q-3-3-008 - Conditional testing rules:** Add `paths` frontmatter with test-file globs so `testing.md` loads only for matching files.
+- **q-3-2-002 - Read-only audit skill:** Place the shared skill in `.claude/skills/` with `allowed-tools: ["Read", "Grep", "Glob"]` and `context: fork`.
+- **q-3-4-002 - Migration planning:** Explore the codebase and compare migration strategies in plan mode before changing a large module system.
+- **q-3-6-002 - Independent review sessions:** Run generation and review as separate sessions without shared context so the review is not biased by the generation rationale.
+- **q-3-5-002 - Dependency-aware refinement:** Correct the shared output schema first, then resolve the independent parsing and formatting defects one at a time.
+- **q-3-3-002 - Polyglot infrastructure rules:** Create separate path-scoped rule files for Terraform, Kubernetes, and Docker conventions.
+- **q-3-1-003 - Unscoped rule priority:** A `.claude/rules/` file without `paths` loads at the same priority as `.claude/CLAUDE.md`.
+- **q-3-1-010 - Modular memory imports:** An `@./path/to/file.md` directive inlines the referenced content when `CLAUDE.md` loads.
+- **q-3-1-011 - Tool lifecycle hooks:** `PreToolUse` can allow, deny, or modify a pending tool call, while `PostToolUse` can modify a successful result.
+- **q-3-2-010 - Tool permissions:** `allowedTools` restricts which tools a session or skill may invoke.
+- **q-3-2-011 - Team command location:** Version-controlled custom slash commands belong in the project's `.claude/commands/` directory.
+- **q-3-6-003 - Pipeline output format:** `--output-format` determines the stdout representation, such as JSON for downstream parsing.
+- **q-3-3-009 - Mobile-specific conventions:** Put React Native guidance in `.claude/rules/react-native.md` with `paths: ["src/mobile/**/*"]`.
+- **q-3-1-012 - Migration-file validation:** Use a `PostToolUse` file-creation hook to verify the timestamped filename pattern and required rollback section.
+- **q-3-2-012 - Path-restricted refactoring:** Limit the session to `Read(src/payment/**)` and `Edit(src/payment/**)` permissions.
+- **q-3-5-004 - Requirements interview:** Use the interview pattern to clarify compliance, retention, and access-control requirements before designing the system.
+- **q-3-6-004 - Per-step CI output:** Run review with `-p --output-format json` and test generation with `-p` in separate invocations.
+- **q-3-1-013 - Scoped rule decomposition:** Split a large `CLAUDE.md` into topic-specific `.claude/rules/` files that load only for matching paths.
+- **q-3-1-014 - Deterministic API enforcement:** Configure `PostToolUse` hooks to lint writes under `src/api/` and normalize processed response payloads to `snake_case`.
+- **q-3-1-005 - Configuration hierarchy:** Keep personal preferences in `~/.claude/CLAUDE.md`, shared standards in `.claude/CLAUDE.md`, and subsystem guidance in directory-level memory or path-scoped rules.
+- **q-3-2-013 - Shared deployment-check skill:** Define the skill in `.claude/skills/` with `allowed-tools: ["Read", "Grep", "Glob", "Bash"]` and `context: fork`.
+- **q-3-6-005 - Session isolation:** Give each generation, accuracy review, and breaking-change check its own context-free session.
+- **q-3-1-015 - User-wide preferences:** Put defaults that should span all projects in `~/.claude/CLAUDE.md`.
+- **q-3-4-005 - Hybrid investigation workflow:** Investigate read-only in plan mode, then switch to direct execution after identifying the precise fix.
+- **q-3-1-006 - Enforcement-grade configuration:** Move mandatory conventions into project `settings.json` or a `PreToolUse` hook.
+- **q-3-1-016 - Automatic Java formatting:** Run the project's Checkstyle formatter from a `PostToolUse` file-write hook.
+- **q-3-2-014 - Repository skill sharing:** Commit reusable team skills under the repository's `.claude/skills/` directory.
+- **q-3-4-006 - Dependency mapping before extraction:** Use plan mode to map cross-module dependencies and compare extraction strategies before moving code.
+- **q-3-6-008 - Parallel worktree execution:** Give each Claude Code instance a separate git worktree and branch.
+- **q-3-6-006 - Explicit test criteria:** Strengthen `CLAUDE.md` with requirements for real database connections and API contract assertions.
+- **q-3-1-007 - Formatter-backed indentation:** Enforce project indentation by running the team formatter in a `PostToolUse` hook after every `Write` or `Edit`.
+- **q-3-1-017 - Post-write linting:** Execute the Java linter on the written file from a `PostToolUse` shell hook.
+- **q-3-4-007 - Deep codebase exploration:** Delegate broad read-only discovery of classes, inheritance, and callback chains to an Explore subagent.
+- **q-3-6-009 - Shared-file coordination:** Merge the first worktree's change, then rebase the second branch before it edits the same file.
+- **q-3-1-008 - Memory after compaction:** Claude Code re-reads `CLAUDE.md` from disk and injects its instructions again after compaction.
+- **q-3-1-018 - Pre-compaction archival:** Use a `PreCompact` hook to write the transcript to a timestamped log before summarization.
+- **q-3-2-015 - Forked documentation skill:** Commit the skill as `.claude/skills/SKILL.md` with `context: fork` to share it while isolating verbose output.
+- **q-3-4-008 - Consistent bulk updates:** Establish terminology and an update strategy in plan mode before revising documentation across many services.
+- **q-3-6-010 - Parallel documentation sessions:** Use one branch, worktree, and Claude Code session per independent service, then merge the results.
+- **q-3-6-007 - Semantic validation criteria:** Define explicit deep-comparison checks because structured JSON output alone does not ensure complete API coverage.
+- **q-3-3-010 - Directory-specific documentation rules:** Create separate `.claude/rules/` files scoped to `docs/api/**`, `docs/architecture/**`, and `docs/runbooks/**`.
+- **q-3-4-009 - Read-only discovery:** Use an Explore subagent to inspect the codebase in a separate context without modifying files.
+- **q-3-1-019 - Hook matching:** Use a hook `if` condition with permission-rule syntax to match the tool name and arguments.
+- **q-3-1-020 - Loaded-memory inspection:** Run `/memory` to list the `CLAUDE.md` and rules files active in the session.
+- **q-3-5-009 - Test-driven iteration:** Write the tests first and use each failing result as the objective target for the next revision.
+- **q-3-3-011 - Glob-scoped test conventions:** A `**/*.test.tsx` path rule reaches matching tests anywhere while loading only for relevant edits.
+- **q-3-5-010 - Example-driven refinement:** Combine tests with concrete input/output examples and focused edge cases to stabilize a transformation.
+- **q-3-6-011 - Additional action instructions:** Pass extra review rules through `claude_args` using `--append-system-prompt`.
+- **q-3-6-012 - Default action trigger:** Without a prompt input, `anthropics/claude-code-action@v1` waits for `@claude` in an issue or pull-request comment.
+- **q-3-6-013 - GitHub Action tool access:** Allow the required GitHub tools through `--allowedTools` in `claude_args` because a text prompt grants no tools.
+
+## Domain 4: Prompt Engineering & Structured Output
+
+- **q-4-1-001 - False-positive isolation:** Temporarily disable the noisy review category while refining its prompt with explicit criteria and code examples.
+- **q-4-2-001 - Varied extraction examples:** Add few-shot examples that demonstrate correct extraction from both structured tables and narrative paragraphs.
+- **q-4-3-001 - Nullable extraction fields:** Make fields optional or nullable whenever the source may legitimately omit their information.
+- **q-4-4-001 - Retry boundaries:** Retry correctable discrepancies with the validation error, but send cases with source-absent information to human review.
+- **q-4-5-001 - Batch workload selection:** Use batch processing for latency-tolerant technical debt reports while retaining real-time calls for blocking pre-merge checks.
+- **q-4-6-001 - Multi-pass code review:** Analyze each file in a dedicated local pass and use a separate integration pass for cross-file consistency.
+- **q-4-1-002 - Severity calibration:** Replace vague severity prose with concrete TypeScript examples for every severity level.
+- **q-4-2-002 - Assertion-style examples:** Provide two to four few-shot examples that model the desired assertion style and explain decisions across async and error-handling cases.
+- **q-4-3-002 - Forced extraction tool:** Keep `tool_use` and force the named extraction tool through `tool_choice` to guarantee structured output.
+- **q-4-4-002 - Error-informed retries:** Retry with the original document, failed extraction, and a validation error that identifies the misplaced fields.
+- **q-4-5-002 - Selective batch recovery:** Resubmit only failed requests by `custom_id`, chunking documents that exceeded the context window first.
+- **q-4-6-002 - Independent review context:** Send generated code to a separate Claude instance with no access to the generation conversation.
+- **q-4-1-003 - Consistent severity examples:** Calibrate severity classifications with concrete snippets that exemplify critical, major, and minor findings.
+- **q-4-3-005 - Schema-enforced output:** Prefer `tool_use` when schema compliance matters because prompt-based JSON can still contain structural or syntax errors.
+- **q-4-2-005 - Few-shot set size:** Use two to four examples with reasoning that span varied scenarios and edge cases.
+- **q-4-5-003 - Batch cost trade-off:** Use the Message Batches API for latency-tolerant work that benefits from 50% lower cost and can accept a 24-hour processing window.
+- **q-4-6-003 - Self-review independence:** Review output in a separate instance without prior reasoning context to avoid anchoring on the original result.
+- **q-4-4-005 - Inter-step validation:** Validate each step's format and content before allowing the next step in a prompt chain to run.
+- **q-4-1-004 - Tool-name overlap:** Avoid instruction wording that overlaps a tool name because the model may follow the textual instruction instead of invoking the tool.
+- **q-4-3-006 - Guaranteed tool invocation:** Set `tool_choice` to the specific extraction tool name when every response must be structured.
+- **q-4-4-006 - Classification checkpoint:** Keep classification and extraction separate, validating the classification before selecting fields to extract.
+- **q-4-2-006 - Async error examples:** Add two to four reasoned examples that demonstrate one correct error-handling pattern across varied async scenarios.
+- **q-4-5-004 - Batch result correlation:** Store each pull request identifier in `custom_id` and use that field to match results to requests.
+- **q-4-6-004 - Per-file attention:** Give each file a dedicated review pass and follow with a cross-file integration pass.
+- **q-4-5-005 - Batch completion polling:** Poll until `processing_status` is `ended` before streaming batch results.
+- **q-4-1-005 - Distinct tool terminology:** Rewrite instructions and tool names with distinct, non-overlapping terms to prevent cross-category tool selection.
+- **q-4-3-007 - Optional schema values:** Redesign sometimes-absent fields as optional or nullable so the model can return `null` instead of fabricating values.
+- **q-4-6-007 - Attention dilution:** Split long documents into per-section extraction passes and reconcile results in a separate cross-section pass.
+- **q-4-5-006 - Batch tool-call limitation:** Run `lookup_counterparty` extraction synchronously because a batch request cannot continue after receiving a tool result.
+- **q-4-4-007 - Targeted field correction:** Retry with the source, failed extraction, and the specific validation error identifying the swapped fields.
+- **q-4-1-006 - Explicit moderation criteria:** Replace broad cautionary language with categorical violation criteria and concrete examples.
+- **q-4-1-007 - Severity anchors:** Define every moderation severity level with a concrete calibration example rather than subjective prose.
+- **q-4-2-003 - Coded-language examples:** Add two to four reasoned examples that identify coded hate language and the group it targets.
+- **q-4-2-004 - Ambiguity coverage:** Use two to four ambiguous examples with reasoning about how context, tone, and intent distinguish satire from violations.
+- **q-4-3-003 - Non-applicable fields:** Make `target_demographic` nullable so non-applicable classifications can return `null` without fabrication.
+- **q-4-3-004 - Controlled category values:** Define `category` as an enum of canonical values with an `other` option instead of accepting free text.
+- **q-4-4-003 - Capability-gap escalation:** Retry correctable format failures, but route unfamiliar-language capability gaps to human review.
+- **q-4-4-004 - Reasoning consistency checks:** Use `detected_patterns` to identify category inconsistencies and provide targeted feedback for self-correction.
+- **q-4-6-005 - Fresh-session review:** Use a fresh independent instance because a session retains reasoning that anchors its review to the original classification.
+- **q-4-6-006 - Local and aggregate moderation:** Classify posts in individual passes, then run a separate cross-post pass to detect coordinated campaigns.
+- **q-4-2-007 - Ambiguous extraction examples:** Use varied document structures plus two to four targeted ambiguous cases that explain the chosen interpretation.
+- **q-4-4-008 - Unrecoverable missing context:** Stop retrying when required information is absent from the source or exists only in an unavailable external document.
+- **q-4-4-009 - Pydantic business rules:** Add a Pydantic model with sum and date-order validators and feed its precise errors into retries.
+- **q-4-4-010 - Cross-field validation:** Add a model validator for the sum relationship and route its errors into retries because `model_validate()` type success alone cannot enforce that rule.
+
+## Domain 5: Context Management & Reliability
+
+- **q-5-1-001 - Persistent case facts:** Keep exact transactional facts in a persistent case facts block outside summarised history.
+- **q-5-2-001 - Escalation criteria:** Define explicit escalation criteria and demonstrate escalation versus autonomous resolution with few-shot examples.
+- **q-5-3-001 - Structured recovery context:** Return the failure type, attempted query, partial results, and possible alternatives so the coordinator can recover intelligently.
+- **q-5-4-001 - Exploration scratchpads:** Record concrete codebase findings in scratchpad files and consult them during later work.
+- **q-5-5-001 - Calibrated review thresholds:** Check per-type performance and calibrate confidence before using aggregate accuracy to automate review decisions.
+- **q-5-6-001 - Conflicting source values:** Preserve both values with their sources and publication dates so consumers can interpret the conflict.
+- **q-5-3-002 - Empty results versus failures:** Accept a successful zero-match response as a coverage gap while retrying a transient timeout as an access failure.
+- **q-5-5-002 - Novel-format monitoring:** Continue stratified sampling of high-confidence outputs across document types to detect errors on unfamiliar formats.
+- **q-5-6-002 - Synthesis attribution:** Require structured claim-source mappings from subagents and preserve them throughout synthesis.
+- **q-5-1-002 - Progressive summarisation loss:** Repeated summarisation can permanently replace exact amounts, dates, and identifiers with generic references.
+- **q-5-4-010 - Cross-context memory:** Use scratchpad files to preserve discoveries across context boundaries for later reference.
+- **q-5-5-003 - Confidence calibration:** Validate against labelled data that predictions reported at X% confidence are correct approximately X% of the time.
+- **q-5-1-003 - Token budget pressure:** When inputs consume 193k of a 200k-token window, summarise history or trim verbose tool output to restore response capacity.
+- **q-5-6-003 - Structured value provenance:** Pair every extracted value with structured source, page, and date metadata instead of fragile prose citations.
+- **q-5-5-004 - Per-type accuracy:** Report accuracy by document type and require review for contracts when aggregate results conceal their poor performance.
+- **q-5-1-010 - Recency consolidation:** Counter context degradation by consolidating important early findings into a structured block near the end of the context.
+- **q-5-6-004 - Evidence conflict disclosure:** Present both efficacy findings with source identity, date, review status, sample size, methodology, and relevant differences for expert judgment.
+- **q-5-1-004 - Shared context capacity:** System instructions, conversation history, tool results, and response tokens all compete within one context-window budget.
+- **q-5-2-004 - Identity disambiguation:** Request additional identifying information before acting when multiple customer accounts match.
+- **q-5-2-005 - Explicit human request:** Escalate immediately when a customer directly asks for a human, even if the issue is easy to solve autonomously.
+- **q-5-1-005 - Relevant tool output:** Append only the columns relevant to the task rather than placing full query results in context.
+- **q-5-3-005 - Access failure visibility:** Propagate a 403 as an access failure so the coordinator can recover or disclose the resulting coverage gap.
+- **q-5-4-005 - Delegated exploration:** Send remaining module investigations to subagents and give each one the accumulated scratchpad findings.
+- **q-5-5-005 - Field-level automation:** Calibrate thresholds per field on labelled data and continuously monitor document and field segments with stratified sampling.
+- **q-5-6-005 - Divergent metric reporting:** Report both growth figures with their sources and dates and note factors that may explain the difference.
+- **q-5-1-006 - Persistent numerical facts:** Store exact numerical findings in a persistent facts block outside progressively summarised history.
+- **q-5-1-007 - Lost-in-the-middle effect:** Long inputs bias attention toward the beginning and end, making information buried in the middle easier to miss.
+- **q-5-3-006 - Source coverage errors:** Propagate structured failure details and identify which data sources and report coverage are missing.
+- **q-5-4-006 - Conversation compaction:** Use `/compact`, optionally with focus instructions, to summarise a degraded long session and recover context budget.
+- **q-5-5-006 - Category-specific evaluation:** Measure review accuracy by category because aggregate results can hide severe errors such as faulty currency conversion.
+- **q-5-6-006 - Dual attribution:** Present both market-share figures with the source, methodology, and time period for each.
+- **q-5-4-007 - Intermediate result storage:** Write each intermediate result to a scratchpad and reload only the final aggregated data needed for the calculation.
+- **q-5-6-007 - Temporal provenance:** Attach each claim to its source and date or refresh timestamp so its temporal relevance remains visible.
+- **q-5-1-008 - Middle-sequence degradation:** The lost-in-the-middle effect can erase detail from the center of a long input even before the context window is full.
+- **q-5-1-009 - Rename preservation:** Progressive summaries can discard precise rename details and leave stale identifiers from earlier module summaries.
+- **q-5-3-007 - Partial-source continuation:** Continue with available sources, return structured details for the failed wiki retrieval, and mark content gaps.
+- **q-5-4-008 - Context degradation mitigation:** Preserve specificity during extensive exploration with scratchpad files and subagents for verbose investigation.
+- **q-5-5-007 - Risk-weighted review:** Use stratified sampling that reviews all high-risk payment docs, 10% of public-query docs, and 5% of internal-tooling docs.
+- **q-5-6-008 - File-level provenance:** Map each architectural claim to its source file, line number, and retrieval date.
+- **q-5-4-009 - Durable audit findings:** Write structured findings after each file and read the scratchpad when producing the final audit.
+- **q-5-5-008 - Incident runbook review:** Human review is essential because fluent text can conceal commands or escalation steps that could worsen an outage.
+- **q-5-6-009 - Claim traceability:** Preserve each synthesized claim with structured links to specific source files and retrieval timestamps.
+- **q-5-2-006 - Policy gaps:** Escalate a clear request when policy provides no guidance for that specific case.
+- **q-5-4-011 - Crash-resumable exploration:** Have every subagent export structured state to a manifest that the coordinator loads after restart.
+- **q-5-2-007 - Human escalation triggers:** Escalate when the customer requests a human, policy is silent or ambiguous, or the agent cannot make meaningful progress.
+- **q-5-5-009 - Automation safeguards:** Calibrate field thresholds on labelled data, verify segmented accuracy, and retain stratified review of high-confidence outputs.
