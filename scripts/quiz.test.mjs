@@ -78,6 +78,42 @@ test('exam draws 60 unique scenario questions in fixed domain quotas', () => {
   }
 });
 
+test('every question has a concise scenario shown above its stem, not in results', () => {
+  const quiz = loadQuiz();
+  assert.equal(quiz.run('ITEM_BANK.filter((item) => !item.sourceScenario || !SCENARIOS.has(item.sourceScenario.n)).length'), 0);
+
+  quiz.run("config.form = 'studySet'; config.clock = 'untimed'; startAttempt()");
+  assert.match(quiz.app.innerHTML, /class="scenario-context"/);
+  assert.match(quiz.app.innerHTML, /Scenario \d+/);
+
+  quiz.run('finishAttempt()');
+  assert.doesNotMatch(quiz.app.innerHTML, /class="scenario-context"/);
+});
+
+test('named organizations in question stems are introduced by their scenario', () => {
+  const quiz = loadQuiz();
+  const organizations = [
+    ['Northwind Regional', 1],
+    ['Meridian Trust', 2],
+    ['Halverson Supply', 3],
+    ['Lumen Labs', 4],
+    ['Brightline Consulting', 5],
+    ['Kestrel Interactive', 6],
+    ['Verity Clinical Data', 7],
+    ['Tidemark', 8],
+    ['Calder Freight', 9],
+    ['Rockford Savings', 10],
+  ];
+
+  for (const [name, scenarioNumber] of organizations) {
+    const items = quiz.run(`ITEM_BANK.filter((item) => item.question.includes(${JSON.stringify(name)}))`);
+    const scenario = quiz.run(`SCENARIOS.get(${scenarioNumber})`);
+    assert.ok(items.length > 0, `Expected question stems to mention ${name}`);
+    assert.ok(items.every((item) => item.sourceScenario.n === scenarioNumber), `${name} questions should use scenario ${scenarioNumber}`);
+    assert.ok(scenario.description.includes(name), `Scenario ${scenarioNumber} should introduce ${name}`);
+  }
+});
+
 test('exam deadline advances while idle, expires on resume, and ignores blur', () => {
   const quiz = loadQuiz();
   quiz.run("config.form = 'examForm'; config.clock = 'timed'; startAttempt()");
