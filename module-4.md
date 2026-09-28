@@ -530,3 +530,54 @@ Least-privilege scoping, secret management, and audit logging are setup work bef
 ### Use a different approach
 
 No prompt instruction is a security control. If it must hold, enforce it with a hook, not a prompt.
+
+## Software Engineering Foundations — success criteria and evaluations
+
+**Supplementary section — sourced from Anthropic documentation, not part of the original course material.** Source: [Define success criteria and build evaluations](https://platform.claude.com/docs/en/test-and-evaluate/develop-tests), retrieved 28 September 2026.
+
+### Good success criteria are specific, measurable, achievable, and relevant
+
+"Good performance" is not a criterion. "Accurate sentiment classification" is closer. A usable criterion is **specific** about what is being achieved, **measurable** through a quantitative metric or a consistently applied qualitative scale, **achievable** against industry benchmarks or prior experiments rather than aspirational, and **relevant** to the application's actual purpose — strong citation accuracy matters far more for a medical application than for a casual chatbot.
+
+Even topics that feel unquantifiable can be stated measurably. "Safe outputs" is a bad criterion; "less than 0.1% of outputs out of 10,000 trials flagged for toxicity by the content filter" is a good one. The same rewrite works for task fidelity: not "the model should classify sentiments well" but "an F1 score of at least 0.85 on a held-out test set of 10,000 diverse posts, a 5% improvement over the current baseline" — which is specific, measurable, relevant, and achievable in one sentence.
+
+### Most use cases need several criteria at once
+
+The dimensions worth considering, none of them sufficient alone:
+
+| Criterion | The question it answers |
+| --- | --- |
+| Task fidelity | How well must the model perform, including on rare or challenging inputs? |
+| Consistency | How similar must responses be for similar inputs? |
+| Relevance and coherence | Does it address the actual question, in a logical order? |
+| Tone and style | Does the output style match expectations for the audience? |
+| Privacy preservation | Can it follow instructions not to use or share sensitive details? |
+| Context utilization | Does it reference and build on what it was already told? |
+| Latency | What response time is acceptable for this application? |
+| Price | What is the budget per call and at expected volume? |
+
+A realistic target combines several: an F1 score floor, a toxicity ceiling, a bound on how bad the errors are allowed to be, and a response-time percentile.
+
+### Three eval design principles
+
+1. **Be task-specific.** Evals should mirror the real-world task distribution, edge cases included. The named edge-case categories are irrelevant or nonexistent input data, overly long input, poor or harmful user input, and genuinely ambiguous cases where even humans would struggle to agree.
+2. **Automate when possible.** Structure questions so they can be graded automatically — multiple choice, string match, code-graded, or LLM-graded.
+3. **Prioritize volume over quality.** More questions with slightly lower-signal automated grading beats fewer questions with high-quality hand grading. This is the principle teams most often invert, and inverting it produces an eval set too small to detect a regression.
+
+### Choose the grading method by speed, reliability, and scale
+
+| Method | Strengths | Weakness |
+| --- | --- | --- |
+| Code-based | Fastest, most reliable, extremely scalable | Lacks nuance for judgments that resist rule-based rigidity |
+| Human | Most flexible, highest quality | Slow and expensive — avoid where possible |
+| LLM-based | Fast, flexible, scalable, handles complex judgment | Reliability must be tested before it is scaled |
+
+Code-based grading covers exact match (`output == golden_answer`) and string match (`key_phrase in output`). Beyond that, the method follows the shape of the criterion: cosine similarity over sentence embeddings for consistency, ROUGE-L for summarization relevance, an LLM Likert scale for tone, LLM binary classification for privacy violations, and an LLM ordinal scale for context utilization.
+
+### Three rules for an LLM grader
+
+- **Give it a detailed, explicit rubric.** "The answer should always mention 'Acme Inc.' in the first sentence. If it does not, the answer is automatically graded as 'incorrect.'" A single success criterion may need several rubrics for a holistic assessment.
+- **Make the output empirical.** Instruct the grader to emit only `correct` or `incorrect`, or a 1–5 number. Purely qualitative evaluations cannot be assessed quickly or at scale.
+- **Make it reason first, then discard the reasoning.** Asking the grader to think in `<thinking>` tags before producing a score in `<result>` tags improves evaluation performance, particularly on tasks needing complex judgment.
+
+One more practice appears throughout the worked examples: it is generally best to grade with a different model than the one that produced the output being graded.

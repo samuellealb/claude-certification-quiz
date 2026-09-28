@@ -246,3 +246,39 @@ A regulated review requires justifying audit logging, data-residency decisions, 
 - **Handles well**: Naming every seam as a boundary and scoping each component to least privilege makes a multi-component app deployable under review.
 - **Adds cost or complexity**: Mapping seams, enforcing controls at each, and logging boundary crossings adds design and audit work to every integration.
 - **Use a different approach**: When a seam cannot be secured, do not ship around it: escalate to a human owner.
+
+## Claude Application Design — model, version, and platform decisions
+
+**Supplementary section — sourced from Anthropic documentation, not part of the original course material.** Sources: [Choosing the right model](https://platform.claude.com/docs/en/about-claude/models/choosing-a-model) and [Model IDs and versioning](https://platform.claude.com/docs/en/about-claude/models/model-ids-and-versions), retrieved 28 September 2026. Named models and defaults change between releases; the decision structure is the durable part.
+
+### Four criteria, and one lever that is often better than switching models
+
+The criteria to weigh when picking a model are capabilities, speed, cost, and effort. The fourth is the one teams reach for last and should often reach for first: the `effort` parameter trades intelligence against latency and cost *within a single model*, so tuning effort is frequently a better lever than changing models. Each model also ships its own default effort, which means the same request sent to two models reasons to different depths before anyone configures anything.
+
+### Two defensible starting points, chosen by what you are optimizing
+
+There are two supported ways to pick a starting model, and they are not interchangeable.
+
+**Efficiency-first** begins with a fast, low-cost model, tests the use case thoroughly, evaluates whether performance meets requirements, and upgrades only for specific capability gaps. It suits prototyping, tight latency requirements, cost-sensitive implementations, and high-volume straightforward tasks.
+
+**Capability-first** begins with the strongest reasonable model, optimizes prompts for it, evaluates, and then increases efficiency later by lowering effort or moving down to cheaper models as the workflow is optimized. It suits complex reasoning, scientific and mathematical work, tasks needing nuanced understanding, advanced coding and high-autonomy agentic work, and any application where accuracy outweighs cost.
+
+The escalation rule inside capability-first is specific: move to the highest-capability model only when evals at the higher effort settings still fall short, not on intuition.
+
+### Upgrading is an evals decision, not a release-notes decision
+
+The documented procedure for deciding whether to change models has four steps, and the first is called out as the most important: create benchmark tests specific to the use case, test with actual prompts and data, compare accuracy, response quality, and edge-case handling across models, and only then weigh performance against cost. A model change without a use-case eval set has no basis on which to be judged.
+
+### Multi-model strategies bill most tokens at the lower rate
+
+Pairing a lower-cost model with a frontier model is a deliberate architecture, not a fallback. Two patterns are named: an **executor that escalates** hard decisions to a more capable advisor, and an **orchestrator that delegates** bulk work to lower-cost workers. Both aim at the same outcome — most tokens billed at the lower rate — but they put the expensive model in different places, one at the decision point and one at the coordination point.
+
+### Dateless model IDs are snapshots, not evergreen pointers
+
+This is the misconception the documentation calls out by name. From the 4.6 generation onward, a dateless ID such as `claude-sonnet-4-6` is the canonical ID for that release and maps to a single fixed snapshot. Anthropic does not update the weights or configuration behind an existing model ID; an updated version ships under a new ID.
+
+That is different from the dateless *aliases* available for earlier models. An alias like `claude-sonnet-4-5` is a convenience pointer that resolves to the most recent dated snapshot for that minor version — which is the real source of the classic unpinned-deployment risk. Every model ID, dated or dateless, has its own distinct deprecation and retirement schedule.
+
+### Fixed weights do not mean fixed observable behavior
+
+Weights are fixed for a given ID, but the serving infrastructure around the model is not. The request router, safety classifiers, and sampling logic can all be updated, and occasionally an infrastructure update produces minor differences in observable behavior even though the model ID and weights have not changed. When a previously stable deployment starts behaving differently and nothing in the application changed, an infrastructure update is the most likely explanation — and it is a reminder that pinning a snapshot bounds the risk rather than eliminating it, which is why the eval suite still runs against production.

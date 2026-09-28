@@ -68,14 +68,54 @@ function loadQuiz() {
 
 test('exam draws 60 unique scenario questions in fixed domain quotas', () => {
   const quiz = loadQuiz();
+  const domains = ['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8'];
+  const totalItems = quiz.run('TOTAL_ITEMS');
+  // Quotas follow the bank's own domain proportions, so they track the blueprint
+  // as the bank fills out instead of needing a new literal on every authoring pass.
+  const expected = domains.map((domain) => quiz.run(`DOMAINS.find((d) => d.id === ${JSON.stringify(domain)}).count`) * 60 / totalItems);
+
   quiz.run("config.form = 'examForm'");
+  let firstDraw = null;
   for (let attempt = 0; attempt < 20; attempt += 1) {
     const pool = quiz.run('buildPool()');
     assert.equal(pool.length, 60);
     assert.equal(new Set(pool.map((item) => item.id)).size, 60);
-    assert.ok(pool.every((item) => quiz.run(`EXAM_SCENARIO_IDS.has(${JSON.stringify(item.id)})`)));
-    assert.deepEqual(['d1', 'd2', 'd3', 'd4', 'd5'].map((domain) => pool.filter((item) => item.domain === domain).length), [11, 11, 13, 11, 14]);
+    assert.ok(pool.every((item) => quiz.run(`isExamEligible(ITEM_BANK.find((i) => i.id === ${JSON.stringify(item.id)}))`)));
+
+    const counts = domains.map((domain) => pool.filter((item) => item.domain === domain).length);
+    counts.forEach((count, idx) => {
+      assert.ok(Math.abs(count - expected[idx]) < 1, `${domains[idx]} drew ${count}, expected about ${expected[idx].toFixed(2)}`);
+    });
+    firstDraw ??= counts;
+    assert.deepEqual(counts, firstDraw, 'domain quotas must be identical on every draw');
   }
+});
+
+test('every item carries a blueprint topic and a known source tier', () => {
+  const quiz = loadQuiz();
+  assert.equal(quiz.run('ITEM_BANK.filter((item) => !TOPIC_BY_ID.has(item.topic)).length'), 0);
+  assert.equal(quiz.run('ITEM_BANK.filter((item) => TOPIC_BY_ID.get(item.topic).domain !== item.domain).length'), 0);
+  assert.equal(quiz.run('ITEM_BANK.filter((item) => !SOURCE_TIER_LABELS[item.sourceTier]).length'), 0);
+  assert.equal(quiz.run('ITEM_BANK.filter((item) => item.answer < 0 || item.answer >= item.options.length).length'), 0);
+  assert.equal(quiz.run('new Set(ITEM_BANK.map((item) => item.id)).size'), quiz.run('ITEM_BANK.length'));
+});
+
+test('option length does not reveal the keyed answer across the bank', () => {
+  const quiz = loadQuiz();
+  const longestIsKey = quiz.run(`ITEM_BANK.filter((item) => {
+    const lengths = item.options.map((option) => option.length);
+    return lengths[item.answer] === Math.max(...lengths);
+  }).length`);
+  const baseline = quiz.run('ITEM_BANK.length / 5');
+
+  assert.ok(longestIsKey <= baseline, `${longestIsKey} keyed answers are longest; expected at most ${baseline}`);
+});
+
+test('model-knowledge items never reach an exam form', () => {
+  const quiz = loadQuiz();
+  assert.equal(quiz.run("ITEM_BANK.filter((item) => item.sourceTier === 'modelKnowledge' && isExamEligible(item)).length"), 0);
+  quiz.run("config.form = 'examForm'");
+  assert.equal(quiz.run("buildPool().filter((item) => item.sourceTier === 'modelKnowledge').length"), 0);
 });
 
 test('every question has a concise scenario shown above its stem, not in results', () => {
@@ -183,8 +223,8 @@ test('exam skips count against 1000 points; study skips remain visible but ungra
 
 test('score weights each attempted domain by its exam blueprint weight, redistributing unattempted weight', () => {
   const quiz = loadQuiz();
-  // Only d1 (27% weight) and d2 (18% weight) are attempted: d1 fully correct, d2 fully wrong.
-  // Redistributed: 1 * (27/45) + 0 * (18/45) = 0.6 -> 600/1000, below the 720 pass mark.
+  // Only d1 (14.7% weight) and d2 (33.1% weight) are attempted: d1 fully correct, d2 fully wrong.
+  // Redistributed: 1 * (14.7/47.8) + 0 * (33.1/47.8) = 0.3075 -> 308/1000, below the 720 pass mark.
   quiz.run(`
     const pool = ['d1', 'd2'].map((domain) => ITEM_BANK.find((i) => i.domain === domain));
     state.attempt = {
@@ -195,15 +235,15 @@ test('score weights each attempted domain by its exam blueprint weight, redistri
     };
     state.view = 'results'; config.form = 'examForm'; renderResults();
   `);
-  assert.match(quiz.app.innerHTML, /<span>600<\/span>/);
-  assert.match(quiz.app.innerHTML, /60%/);
+  assert.match(quiz.app.innerHTML, /<span>308<\/span>/);
+  assert.match(quiz.app.innerHTML, /31%/);
   assert.match(quiz.app.innerHTML, /Below pass mark/);
-  assert.match(quiz.app.innerHTML, /27% weight/);
-  assert.match(quiz.app.innerHTML, /18% weight/);
-  assert.doesNotMatch(quiz.app.innerHTML, /D3|D4|D5/);
+  assert.match(quiz.app.innerHTML, /14\.7% weight/);
+  assert.match(quiz.app.innerHTML, /33\.1% weight/);
+  assert.doesNotMatch(quiz.app.innerHTML, /D3|D4|D5|D6|D7|D8/);
 
   quiz.run(`
-    const pool2 = ['d1', 'd2', 'd3', 'd4', 'd5'].map((domain) => ITEM_BANK.find((i) => i.domain === domain));
+    const pool2 = ['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8'].map((domain) => ITEM_BANK.find((i) => i.domain === domain));
     state.attempt = {
       pool: pool2, index: 0,
       answers: pool2.map((item) => item.answer),

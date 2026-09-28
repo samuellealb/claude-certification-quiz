@@ -63,3 +63,65 @@ Two patterns address high-volume work, and they solve different problems.
 The Python SDK exposes an async client (AsyncAnthropic) that uses non-blocking async/await to make API calls without tying up your application thread. In the TypeScript SDK the standard Anthropic client is Promise-based, so you await calls directly. There is no separate async client class. Either way the request still returns in real time, but your application can handle other work while it waits. This is the right pattern when you need concurrency without blocking.
 
 The Message Batches API is a separate pattern for bulk offline workloads. You submit a large set of requests in one call, receive an identifier, and poll for completion. Batch jobs can take up to 24 hours to complete and run at a lower per-token cost in exchange for that latency. This suits offline pipelines, evaluation runs, and bulk jobs where no user is waiting on each result and cost matters more than turnaround time.
+
+## LLM Fundamentals — model specifications
+
+**Supplementary section — sourced from Anthropic documentation, not part of the original course material.** Source: [Models overview](https://platform.claude.com/docs/en/models/overview), retrieved 28 September 2026. Model-specific numbers move between releases; treat the shape of each distinction as the durable part and re-check the figures against the live page before you rely on them.
+
+### Context window and maximum output are two separate ceilings
+
+A model's context window is the total budget for everything the model processes in a request. Its maximum output is a separate, smaller cap on what one response may generate. Claude Fable 5.1, Claude Opus 5.5, and Claude Sonnet 5 carry a 1M-token context window and a 128K-token maximum output; Claude Haiku 4.5 carries a 200K-token window and a 64K-token maximum output. The maximum-output figure is the synchronous Messages API limit — on the Message Batches API several models accept a beta header that raises the ceiling to 300K output tokens.
+
+Two consequences follow. A request can fit comfortably inside the context window and still be truncated because generation hit the output cap, which is a different failure from an oversized request rejected before generation. And a model with the larger window is not automatically the model with the larger response budget.
+
+### Tokens are not words, and the ratio moved
+
+On the tokenizer introduced with Claude Opus 4.7, 1M tokens is roughly 555k words or 2.5M Unicode characters. Models that predate that tokenizer fit roughly 750k words into the same 1M tokens. A capacity estimate written against an older model therefore over-counts how much text fits on a current one, and any budget calculation carried forward from an earlier generation needs re-measuring rather than scaling.
+
+### Reliable knowledge cutoff is not the training data cutoff
+
+Each model publishes two dates. The training data cutoff is the broader range of data the model saw. The reliable knowledge cutoff is the earlier date through which the model's knowledge is most extensive and dependable. For Claude Haiku 4.5 these differ by several months. When a design depends on the model knowing something without retrieval, the reliable knowledge cutoff is the date to plan against, not the training data cutoff.
+
+### Adaptive thinking replaced the manual thinking budget
+
+Adaptive thinking lets the model decide how much to think, steered by the `effort` parameter. It is always on for Claude Fable 5.1 and Claude Opus 5.5. Extended thinking — the manual `thinking.type: "enabled"` plus `budget_tokens` mode — is deprecated on Claude Opus 4.6 and Claude Sonnet 4.6 and is not accepted on later models. Each model also carries its own default effort, so the same request sent to two models can reason to different depths without any explicit setting.
+
+### Every current model ID is a pinned snapshot
+
+From the 4.6 generation onward, the dateless model ID is itself a pinned snapshot rather than a moving pointer. For earlier models the alias was a convenience pointer that resolved to a dated ID, which is where the classic unpinned-deployment risk came from. The `capabilities` object and the `max_input_tokens` and `max_tokens` fields returned by the Models API let an application read these limits at runtime instead of hardcoding them.
+
+## Technical Fundamentals — rate limits and spend limits
+
+**Supplementary section — sourced from Anthropic documentation, not part of the original course material.** Source: [Rate limits](https://platform.claude.com/docs/en/api/rate-limits), retrieved 28 September 2026.
+
+### Two different limits produce two different failures
+
+Spend limits cap what an organization can spend in a calendar month. Rate limits cap how many requests or tokens it may use over a short window. Both stop traffic, but they are not the same failure and they do not recover the same way.
+
+A rate limit returns HTTP 429 with a `retry-after` header saying how long to wait. A tier spend cap also returns HTTP 429 with error type `rate_limit_error` — but it carries no `retry-after` header, and retrying, including an SDK's automatic retries, keeps failing until access resumes at the start of the next month or the organization moves to a higher tier. The field that tells the two apart on the Messages API is `error.details.error_code`, which is `enforced_spend_limit_reached` for the spend cap.
+
+A spend limit the organization set for itself behaves differently again: it returns HTTP 400 with error type `invalid_request_error`, not a 429 at all.
+
+### Rate limits are measured on three axes, per model, per organization
+
+Messages API rate limits are expressed as requests per minute (RPM), input tokens per minute (ITPM), and output tokens per minute (OTPM), and they apply separately to each model class. Using two models simultaneously draws on two independent budgets. Limits are set at the organization level and assigned by usage tier, and capacity is replenished continuously by a token-bucket algorithm rather than reset at a fixed interval — which is why a short burst can trigger a limit error even when the per-minute average looks safe.
+
+The Message Batches API, the Files API, and Managed Agents endpoints each carry their own separate limits.
+
+### Cached input usually does not count toward ITPM
+
+For most current models only *uncached* input counts toward the input-tokens-per-minute limit:
+
+| Field | Counts toward ITPM? |
+| --- | --- |
+| `input_tokens` — tokens after the last cache breakpoint | Yes |
+| `cache_creation_input_tokens` — tokens being written to the cache | Yes |
+| `cache_read_input_tokens` — tokens read from the cache | No, for most models |
+
+Total input is the sum of all three, so `input_tokens` alone understates a request's real size whenever caching is in play: a 200k-token cached document with a 50-token question reports `input_tokens: 50`. Because cache reads are exempt, prompt caching raises effective throughput without any change to the configured limit — a 2,000,000 ITPM limit at an 80% cache hit rate processes roughly 10,000,000 total input tokens per minute. Claude Haiku 3.5 is the documented exception that does count cache reads toward ITPM.
+
+OTPM is evaluated in real time against tokens actually produced, so `max_tokens` does not factor into it. Raising `max_tokens` carries no rate-limit penalty.
+
+### The response headers report the binding constraint
+
+Every response carries `anthropic-ratelimit-*` headers for the request, token, input-token, and output-token limits, each with a limit, a remaining count, and an RFC 3339 reset time. The `anthropic-ratelimit-tokens-*` family reports whichever limit is currently most restrictive, so if a workspace limit is binding those headers describe the workspace limit rather than the organization's. Workspace limits exist to stop one workspace from consuming an organization's whole budget; organization-wide limits always apply on top, even when the workspace limits sum to more.

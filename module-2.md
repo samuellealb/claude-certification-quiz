@@ -802,3 +802,106 @@ Chunking a list and looping over the synchronous API is not batching, even thoug
 6. **The workflow-or-agent decision sets the cost of everything that follows, and human checkpoints belong in the design.** A workflow is the right call when you can write the exact steps in code, and an agent is the right call when you can specify the goal and the tools but not the path between them. Choosing wrong in either direction only surfaces in production: agents where workflows would do add context cost and behavior that lives in transcripts, and workflows where agents are needed break the first time an input falls outside the path. If a tool can take an irreversible action, the human-in-the-loop checkpoint goes in before the loop is wired, not after the first write reaches a customer environment.
 7. **Memory scope is decided by the shape of the session, not by what is easiest to implement.** In-context memory is the simplest pattern to write, which is why it is also the one that fails earliest when production sessions turn out to be shorter and more numerous than the long continuous sessions used in development. External storage adds latency but the state survives across sessions, summarized memory cuts cost but loses anything the summarizer prompt did not preserve, and stateless is correct for jobs that complete and close. The refactor from in-context to external under production pressure takes about an hour, and making the same choice deliberately at design time takes about twenty minutes. Carrying repeatable instructions across tasks is a separate problem from carrying state, and the pattern for it is a Skill: a markdown file Claude loads on demand by matching its description, rather than instructions injected into every session.
 8. **Calculate the cost of a multimodal input before you write the ingestion code and match the API to the workload.** An image costs ⌈width / 28⌉ × ⌈height / 28⌉ visual tokens, and the per-image ceiling differs by model tier. A high-resolution original on the newest models can cost many times what a thumbnail costs in your test set, so the formula needs to run against the largest input you expect in production rather than the inputs you have on hand. Inline base64 fits one-off images, the Files API fits assets reused across requests, and the Message Batches API handles offline work at lower per-token cost in exchange for non-deterministic latency. The mistake worth avoiding is calling the synchronous API in a loop and treating that as batching.
+
+## Agent Patterns and Frameworks
+
+**Supplementary section — sourced from Anthropic documentation, not part of the original course material.** Source: [Building effective agents](https://www.anthropic.com/engineering/building-effective-agents), Anthropic engineering, published 19 December 2024, retrieved 28 September 2026. The article notes that much of the tooling landscape it describes has since changed; the patterns below are the durable part, not the tooling around them.
+
+### Agentic systems split into workflows and agents
+
+Anthropic groups every variation under *agentic systems* and draws one architectural line through them. A **workflow** is a system where models and tools are orchestrated through predefined code paths. An **agent** is a system where the model dynamically directs its own process and tool usage, keeping control of how it accomplishes the task.
+
+The recommendation that governs the choice is to find the simplest solution that works and add complexity only when it demonstrably improves outcomes. Agentic systems trade latency and cost for task performance. Workflows give predictability and consistency on well-defined tasks; agents are the better option when flexibility and model-driven decision-making are needed at scale. For many applications neither is required — optimizing a single call with retrieval and in-context examples is enough.
+
+### The augmented LLM is the building block
+
+Every pattern below assumes one building block: a model augmented with retrieval, tools, and memory, able to generate its own search queries, select tools, and decide what to retain. Two things matter in implementing it — tailoring those capabilities to the specific use case, and giving the model an easy, well-documented interface to them.
+
+### The five composable patterns
+
+| Pattern | Shape | Use it when |
+| --- | --- | --- |
+| Prompt chaining | A fixed sequence where each call processes the previous call's output, with optional programmatic gates between steps | The task decomposes cleanly into fixed subtasks and you want to trade latency for accuracy |
+| Routing | A classification step directs the input to a specialized follow-up task | Distinct categories are better handled separately and classification can be done accurately |
+| Parallelization | Independent calls run at once and their outputs are aggregated programmatically | Subtasks are independent (sectioning), or multiple attempts raise confidence (voting) |
+| Orchestrator-workers | A central model breaks down the task at runtime, delegates to workers, and synthesizes results | You cannot predict the subtasks in advance |
+| Evaluator-optimizer | One call generates, another evaluates and feeds back, in a loop | Evaluation criteria are clear and iterative refinement measurably helps |
+
+Two distinctions in that table are easy to lose. **Parallelization versus orchestrator-workers** are topographically similar, and the difference is where the subtasks come from: parallelization's are pre-defined, the orchestrator's are determined at runtime from the specific input. **Sectioning versus voting** are both parallelization: sectioning splits one task into independent parts, voting runs the same task several times for diverse outputs.
+
+Routing also carries a cost lever the other patterns do not — easy and common questions can be routed to a smaller, cost-efficient model and hard or unusual ones to a more capable model, which optimizes cost and performance at the same time.
+
+Evaluator-optimizer has two named signs of good fit: responses demonstrably improve when a human articulates feedback, and the model can itself provide that feedback.
+
+### Agents, and their stopping conditions
+
+Agents start from a command or an interactive discussion, then plan and operate independently, potentially returning to a human for information or judgement. During execution the critical requirement is that the agent gains ground truth from the environment at each step — a tool result, a code execution — to assess its own progress. Agents pause for human feedback at checkpoints or when blocked. A task usually terminates on completion, but it is common to add stopping conditions such as a maximum iteration count to keep control.
+
+Agents suit open-ended problems where the number of steps cannot be predicted and no fixed path can be hardcoded. That autonomy means higher cost and the potential for compounding errors, so the recommendation is extensive testing in sandboxed environments plus appropriate guardrails.
+
+### Frameworks help you start and can hide what you need to debug
+
+Frameworks — the Claude Agent SDK among them — simplify the low-level work of calling models, defining and parsing tools, and chaining calls. They also add abstraction layers that obscure the underlying prompts and responses, making failures harder to debug, and they make it tempting to add complexity where a simpler setup would do. The guidance is to start with the API directly, since many of these patterns are a few lines of code; if you do adopt a framework, understand the code underneath it, because incorrect assumptions about what is under the hood are a common source of error.
+
+### Three principles, and the agent-computer interface
+
+Three principles govern agent implementation: keep the design simple, prioritize transparency by explicitly showing the agent's planning steps, and carefully craft the agent-computer interface through thorough tool documentation and testing.
+
+That last principle is the one most often underweighted. Tool definitions deserve as much prompt-engineering attention as the main prompt. The suggested tests are practical: give the model enough tokens to think before it commits to a format, keep formats close to what occurs naturally in text, and remove formatting overhead such as counting lines or escaping strings. Ask whether it is obvious how to use the tool from its description and parameters alone — if you would have to think carefully, so will the model. A good tool definition includes example usage, edge cases, input format requirements, and clear boundaries against other tools. Where possible, poka-yoke the arguments so mistakes are harder to make: the reported example is switching a tool from relative to absolute file paths after the model made repeated mistakes once the agent moved out of the root directory.
+
+## Claude API Mechanics — errors, limits, and request validation
+
+**Supplementary section — sourced from Anthropic documentation, not part of the original course material.** Sources: [Claude API errors](https://platform.claude.com/docs/en/api/errors) and [Context windows](https://platform.claude.com/docs/en/build-with-claude/context-windows), retrieved 28 September 2026.
+
+### The status code tells you which layer failed
+
+Every error returns JSON with a top-level `error` object carrying a `type` and `message`, plus a `request_id`. The status code narrows the cause before you read the message:
+
+| Status | `type` | What it means |
+| --- | --- | --- |
+| 400 | `invalid_request_error` | Malformed or invalid request — also returned when a spend limit you set yourself is reached |
+| 401 | `authentication_error` | The API key is malformed, revoked, or expired |
+| 403 | `permission_error` | The key lacks permission for that resource |
+| 409 | `conflict_error` | The request conflicts with current resource state |
+| 413 | `request_too_large` | The request exceeds the per-endpoint byte limit |
+| 429 | `rate_limit_error` | A rate limit, a tier spend cap, or a Claude Code workspace spend limit |
+| 500 | `api_error` | An internal error — retry with exponential backoff |
+| 504 | `timeout_error` | The request timed out while processing |
+| 529 | `overloaded_error` | The API is temporarily overloaded |
+
+Two of these are easy to misread. A 429 does not always mean a rate limit: the tier spend cap uses the same status and type but carries no `retry-after` header and keeps failing until access resumes. And a 400 is not always a bad request body — it is also what a self-imposed spend limit returns.
+
+Request size limits are enforced separately from token limits: 32 MB for the Messages API and Token Counting API, 256 MB for the Batch API, 500 MB for the Files API. Sending many images or large documents can hit the byte limit before the token limit does.
+
+### The SDKs already retry, and streaming errors bypass the mechanism
+
+The official SDKs automatically retry transient failures — connection errors, rate limits, and 5xx — with exponential backoff, twice by default, honoring `retry-after` when present. `max_retries` configures or disables that. Because those retries exist, an application-level retry loop wrapped around an SDK call multiplies attempts rather than adding one.
+
+Streaming breaks the pattern. Over server-sent events an error can occur *after* the API has already returned 200, so it never surfaces as an HTTP status and standard error handling does not see it. Mid-stream errors arrive as error events inside the stream.
+
+For debugging, every response carries a `request-id` header, repeated as `request_id` in error bodies. Catch the SDKs' typed exception classes rather than string-matching messages.
+
+### Validation errors that come from model-generation differences
+
+Several 400s are not bugs in the request so much as a request written for a different model generation:
+
+- **Prefill not supported.** Claude 4.6 and later reject a prefilled final assistant message. Use structured outputs or `output_config.format` instead.
+- **Thinking blocks cannot be modified.** A `thinking` or `redacted_thinking` block that was edited, reordered, filtered out, or reconstructed before being sent back is rejected. Every block from the assistant turn must be passed back exactly as received — *including* blocks whose `thinking` field is empty.
+- **Extended thinking not supported.** Claude 4.7 and later removed it; `thinking: {"type": "enabled"}` returns a 400 directing you to adaptive thinking plus `output_config.effort`.
+- **Adaptive thinking not supported.** The mirror-image failure: Claude 4.5 and earlier reject `thinking: {"type": "adaptive"}`.
+- **Thinking cannot be disabled.** On the models where thinking is always on, `thinking: {"type": "disabled"}` is rejected. To keep reasoning out of the response without disabling it, set `display: "omitted"`.
+- **Forced tool use not supported.** Claude Opus 5.5 and Claude Fable 5.1 reject `tool_choice` of type `any` or `tool`. Only `auto` and `none` are accepted, so schema guarantees have to come from strict tool use or structured outputs instead of forcing a call.
+
+### Overflow behaves differently depending on where the limit is crossed
+
+Everything in the request counts toward the context window: the system prompt, every message including tool results, images and documents, the tool definitions, and the output Claude generates including its thinking. Prompt caching splits the input count across `input_tokens`, `cache_read_input_tokens`, and `cache_creation_input_tokens` — and all three count toward the window. Caching changes what you pay for those tokens, not whether they occupy space.
+
+If the input alone exceeds the window, the API returns a 400 `invalid_request_error` reading "prompt is too long", on every model. If the input fits but input plus `max_tokens` could exceed it, Claude 4.5 and newer accept the request and, should generation reach the limit, stop with `stop_reason: "model_context_window_exceeded"`. Earlier models return a validation error unless a beta header opts them into the newer behavior.
+
+Larger is also not automatically better. As token count grows, accuracy and recall degrade — *context rot* — which makes curating what enters context as important as how much room is left.
+
+### Context awareness and compaction
+
+Claude Sonnet 5, Sonnet 4.6, Sonnet 4.5, and Haiku 4.5 track their own remaining budget. The API injects a `<budget:token_budget>` tag into the system prompt and a `<system_warning>` after each tool call reporting tokens used and remaining. This is automatic — the application never sends those tags. Claude Opus 4.7 and later Opus models, and the Fable and Mythos lines, do not receive them; those models take an explicit budget through task budgets instead.
+
+When conversations regularly approach the limit, server-side compaction summarizes earlier turns on the server so the conversation can continue past the window. Context editing offers narrower tools: tool result clearing and thinking block clearing.
