@@ -2849,7 +2849,7 @@
         { id: "d8-12", domain: "d8", topic: "mcp-server-development",
           difficulty: "standard", badge: "unbadged", sourceTier: "course",
           question: "A platform team has a carefully reviewed incident-analysis instruction template that should be available consistently in every compatible client. Users should discover it by name rather than rewrite the procedure, and it does not itself execute an operation or represent raw data. Which MCP primitive should the server expose?",
-          options: ["It defines server-wide behavioral instructions that replace a client's system prompt while connected", "It exposes a maintained instruction template that clients can discover and invoke by name", "It transforms tool errors into follow-up instructions so Claude can recover without application logic", "It supplies the natural-language routing description that every MCP tool schema must reference for each session", "It stores the initial user message that launches automatically whenever the server connects"],
+            options: ["A server-wide system instruction that replaces a client's system prompt while connected", "A prompt: a maintained instruction template that clients can discover and invoke by name", "A tool that transforms tool errors into follow-up instructions so Claude can recover without application logic", "A tool description that every MCP tool schema must reference for each session", "An initialization message that launches automatically whenever the server connects"],
           answer: 1,
           explanation: "A prompt lets a server package a carefully built instruction once, so every connected client can invoke a vetted version instead of each user writing their own.",
           references: [
