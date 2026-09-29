@@ -100,6 +100,16 @@ test('every item carries a blueprint topic and a known source tier', () => {
   assert.equal(quiz.run('new Set(ITEM_BANK.map((item) => item.id)).size'), quiz.run('ITEM_BANK.length'));
 });
 
+test('evidence source filter includes all sources or course material only', () => {
+  const quiz = loadQuiz();
+  quiz.run("config.form = 'studySet'; config.itemSelection = 'fullyRandom'; config.evidentiary = 'allSources'");
+  assert.equal(quiz.run('buildPool().length'), quiz.run('ITEM_BANK.length'));
+
+  quiz.run("config.evidentiary = 'courseOnly'");
+  assert.equal(quiz.run("buildPool().filter((item) => item.sourceTier !== 'course').length"), 0);
+  assert.ok(quiz.run("buildPool().length") < quiz.run('ITEM_BANK.length'));
+});
+
 test('option length does not reveal the keyed answer across the bank', () => {
   const quiz = loadQuiz();
   const longestIsKey = quiz.run(`ITEM_BANK.filter((item) => {
