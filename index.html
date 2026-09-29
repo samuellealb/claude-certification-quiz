@@ -545,7 +545,7 @@
       .exam-domain::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
       .exam-card > .question-text, .exam-card > section { position: relative; z-index: 1; }
 
-      .exam-bottom-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 16px 0; }
+      .exam-bottom-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 16px 0 64px; }
       .exam-nav-btn {
         display: inline-flex;
         align-items: center;
@@ -570,7 +570,13 @@
       .exam-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); }
       .exam-dot.answered { background: var(--accent-border); }
       .exam-dot.current { background: var(--accent-solid); transform: scale(1.5); }
-      .exam-secondary-row { display: flex; gap: 10px; flex-wrap: wrap; }
+      .exam-secondary-row { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+      .exam-secondary-row .check-row { margin-left: auto; }
+
+      @media (min-width: 1101px) {
+        .exam-map-btn { display: none; }
+        .exam-secondary-row #submitEarlyBtn { display: none; }
+      }
 
       @media (max-width: 1100px) {
         .exam-layout { display: block; width: 100%; margin-left: 0; transform: none; }
@@ -596,9 +602,26 @@
         .exam-watermark { font-size: 3.2rem; }
         .exam-nav-label { display: none; }
         .exam-nav-btn { padding: 10px 14px; }
+        .exam-secondary-row { flex-direction: column; align-items: stretch; }
+        .exam-secondary-row .check-row { flex-direction: column; margin-left: 0; }
+        .exam-secondary-row #submitEarlyBtn { order: 1; }
+        .exam-secondary-row .btn { width: 100%; }
         .exam-header-right { gap: 6px; }
         .exam-header-right .timer { padding: 6px 8px; }
         .exam-map-btn { padding: 8px 10px; }
+        .exam-navigator {
+          inset: 0;
+          z-index: 60;
+          width: 100vw;
+          max-width: 100vw;
+          height: 100vh;
+          height: 100dvh;
+          max-height: 100vh;
+          max-height: 100dvh;
+          border: 0;
+          border-radius: 0;
+          box-shadow: none;
+        }
       }
 
       .score-wrap { display: flex; gap: 32px; flex-wrap: wrap; align-items: center; margin-bottom: 32px; }
@@ -3322,7 +3345,7 @@
         form: 'studySet',
         domainFocus: 'all',
         difficulty: 'mixed',
-        evidentiary: 'allSources',
+        evidentiary: 'allBadged',
         itemSelection: 'preferUnseen',
         feedback: 'perItem',
         clock: 'timed'
@@ -3346,7 +3369,7 @@
           if (config.domainFocus !== 'all') {
             pool = pool.filter((i) => i.domain === config.domainFocus);
           }
-          if (config.evidentiary === 'courseOnly') {
+          if (config.evidentiary === 'guideOnly') {
             pool = pool.filter((i) => i.sourceTier === 'course');
           }
 
@@ -3441,8 +3464,8 @@
         ];
 
         const evidentiaryCards = [
-          { key: 'allSources', title: 'All sources', desc: 'Include course material, Anthropic docs, and LLM-supplemented items' },
-          { key: 'courseOnly', title: 'Official course material only', desc: 'Exclude items drawn from Anthropic docs or model knowledge' }
+          { key: 'allBadged', title: 'All items, badged', desc: 'Inferred and judgment-call items are labelled in place' },
+          { key: 'guideOnly', title: 'Official course material only', desc: 'Exclude items drawn from Anthropic docs or model knowledge' }
         ];
 
         const itemSelectionCards = [
@@ -3475,7 +3498,10 @@
               (${DOMAINS.map((d) => `${d.code} ${d.weight}%`).join(' · ')}), with a pass mark of 720/1000. A domain with no attempted items has its
               weight redistributed proportionally among the others. The real exam reports a scaled score from 100–1,000 plus your
               percent-correct by domain, so treat this score as a readiness gauge rather than a prediction of your scaled score.
-              Keys are checked against the module files in this repository.
+              Keys are checked against the module files in this repository. Where an item turns on a specific parameter, flag, or API constraint,
+              a <strong>Docs note</strong> records the exact detail named in the modules. <strong>Unbadged</strong> means the modules state the answer
+              directly. <strong>Inferred</strong> extends a documented principle to a case the modules do not directly address.
+              <strong>Judgment call</strong> means the modules are silent on the deciding factor and the key reflects the author's reasoning.
             </p>
           </header>
 
@@ -3505,9 +3531,9 @@
             </fieldset>
           </section>
 
-          <section class="section ${disabledAttr}" role="region" aria-label="Evidence source settings">
+          <section class="section ${disabledAttr}" role="region" aria-label="Evidentiary basis settings">
             <fieldset class="section-group" ${disabledAttr}>
-              <legend id="evidenceSectionHeading" class="section-label">Evidence sources</legend>
+              <legend id="evidenceSectionHeading" class="section-label">Evidentiary basis</legend>
               <div class="option-grid">${renderOptionCards(evidentiaryCards, 'evidentiary', config.evidentiary)}</div>
             </fieldset>
           </section>
