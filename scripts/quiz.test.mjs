@@ -128,7 +128,7 @@ test('model-knowledge items never reach an exam form', () => {
   assert.equal(quiz.run("buildPool().filter((item) => item.sourceTier === 'modelKnowledge').length"), 0);
 });
 
-test('every question has a concise scenario shown above its stem, not in results', () => {
+test('study mode shows scenarios, while exam mode hides study aids', () => {
   const quiz = loadQuiz();
   assert.equal(quiz.run('ITEM_BANK.filter((item) => !item.sourceScenario || !SCENARIOS.has(item.sourceScenario.n)).length'), 0);
 
@@ -138,6 +138,12 @@ test('every question has a concise scenario shown above its stem, not in results
 
   quiz.run('finishAttempt()');
   assert.doesNotMatch(quiz.app.innerHTML, /class="scenario-context"/);
+
+  quiz.run("config.form = 'examForm'; config.clock = 'timed'; startAttempt()");
+  assert.doesNotMatch(quiz.app.innerHTML, /class="scenario-context"/);
+  assert.doesNotMatch(quiz.app.innerHTML, /class="exam-domain"/);
+  assert.doesNotMatch(quiz.app.innerHTML, /data-map-filter="d[1-8]"/);
+  assert.match(quiz.app.innerHTML, /class="exam-filter-list is-compact"/);
 });
 
 test('named organizations in question stems are introduced by their scenario', () => {
@@ -229,6 +235,26 @@ test('exam skips count against 1000 points; study skips remain visible but ungra
   assert.match(quiz.app.innerHTML, /<span>1000<\/span>/);
   assert.match(quiz.app.innerHTML, /2 \/ 2 correct/);
   assert.match(quiz.app.innerHTML, /Your answer: Unanswered/);
+});
+
+test('results review filters show all, flagged, wrong, and right items', () => {
+  const quiz = loadQuiz();
+  quiz.run(`state.attempt = {
+    pool: ITEM_BANK.slice(0, 4), index: 0,
+    answers: [ITEM_BANK[0].answer, (ITEM_BANK[1].answer + 1) % ITEM_BANK[1].options.length, ITEM_BANK[2].answer, null],
+    checked: [false, false, false, false], flagged: [false, true, true, false],
+    timerId: null, autoSubmitted: false
+  }; state.view = 'results'; config.form = 'examForm'; renderResults()`);
+  const reviewCardCount = () => (quiz.app.innerHTML.match(/class="review-card"/g) || []).length;
+
+  assert.match(quiz.app.innerHTML, /data-results-filter="all"/);
+  assert.equal(reviewCardCount(), 4);
+  quiz.run("resultsFilter = 'flagged'; renderResults()");
+  assert.equal(reviewCardCount(), 2);
+  quiz.run("resultsFilter = 'wrong'; renderResults()");
+  assert.equal(reviewCardCount(), 1);
+  quiz.run("resultsFilter = 'right'; renderResults()");
+  assert.equal(reviewCardCount(), 2);
 });
 
 test('score weights each attempted domain by its exam blueprint weight, redistributing unattempted weight', () => {

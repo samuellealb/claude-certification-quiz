@@ -16,6 +16,8 @@
         --accent: #2563eb;
         --accent-bg: #eef4ff;
         --accent-border: #93b4f5;
+        --flag: #b45309;
+        --flag-bg: #fff4d6;
         --good: #16a34a;
         --good-bg: #eafbf1;
         --bad: #dc2626;
@@ -40,6 +42,8 @@
         --accent: #86b6ff;
         --accent-bg: #16223d;
         --accent-border: #4d75b8;
+        --flag: #fbbf24;
+        --flag-bg: #3a2a07;
         --good: #4ade80;
         --good-bg: #10281c;
         --bad: #f87171;
@@ -398,7 +402,8 @@
       .question-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 6px; }
       .question-jump { min-height: 40px; padding: 4px; border: 1px solid var(--border-strong); background: var(--panel); color: var(--text); border-radius: 6px; cursor: pointer; font: inherit; font-size: 0.8rem; }
       .question-jump.answered { background: var(--good-bg); border-color: var(--good); }
-      .question-jump.flagged { border: 2px solid var(--accent); }
+      .question-jump.flagged { border: 2px solid var(--flag); background: var(--flag-bg); color: var(--flag); font-weight: 700; }
+      .question-jump.flagged:not(.answered) { background: var(--panel); font-weight: normal; }
       .question-jump.current { outline: 2px solid var(--accent-solid); outline-offset: 2px; }
       .question-jump:focus-visible { outline: 2px solid var(--accent-solid); outline-offset: 2px; }
       .flagged-label { color: var(--accent); font-weight: 600; }
@@ -482,6 +487,7 @@
       .exam-navigator-head h2 { margin: 0; font-size: 1rem; line-height: 1.3; }
       .exam-navigator-close { display: none; }
       .exam-filter-list { position: relative; display: grid; flex: 0 0 var(--filter-height); gap: 2px; min-height: 0; padding: 10px 10px 18px; border-bottom: 1px solid var(--border); overflow-y: auto; }
+      .exam-filter-list.is-compact { overflow-y: hidden; }
       .exam-filter-resize-handle { position: absolute; right: 0; bottom: 0; left: 0; height: 12px; cursor: ns-resize; touch-action: none; z-index: 2; }
       .exam-filter-resize-handle::before { content: ''; position: absolute; right: 50%; bottom: 3px; width: 40px; height: 2px; border-radius: 999px; background: var(--border-strong); transform: translateX(50%); opacity: 0; transition: opacity 0.15s ease; }
       .exam-filter-list:hover .exam-filter-resize-handle::before,
@@ -656,6 +662,20 @@
       .breakdown-row .num { width: 46px; text-align: right; font-weight: 600; }
 
       .review-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; }
+      .results-filter { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+      .results-filter button {
+        border: 1px solid var(--border-strong);
+        border-radius: 999px;
+        background: var(--panel);
+        color: var(--text);
+        cursor: pointer;
+        font: inherit;
+        font-size: 0.82rem;
+        padding: 7px 12px;
+      }
+      .results-filter button:hover, .results-filter button[aria-selected="true"] { border-color: var(--accent-border); color: var(--accent); background: var(--accent-bg); }
+      .results-filter button:focus-visible { outline: 2px solid var(--accent-solid); outline-offset: 2px; }
+      .review-filter-empty { color: var(--muted); margin: 0; }
       .review-head {
         display: flex;
         justify-content: space-between;
@@ -1316,10 +1336,10 @@
           ] },
         { id: "d2-19", domain: "d2", topic: "claude-api-mechanics",
           difficulty: "hard", sourceTier: "course",
-          question: "One pipeline enables JSON structured outputs and sees added latency on its first call that does not recur. Another generates a fresh schema per request and pays that latency every time. What accounts for the difference?",
-          options: ["The first pipeline's responses are cached, so identical outputs return without being generated", "The first pipeline's schema is small enough to validate inline, while a larger schema is compiled remotely", "The schema is compiled into a grammar first, and that grammar is reused for a while after last use", "Structured outputs are applied after generation on the first call and during generation thereafter", "The second pipeline invalidates the prompt cache, and the latency is the prefix being reprocessed"],
+          question: "One pipeline reuses the same JSON schema for structured outputs: its first call is slower, but later calls are not. Another generates a different schema for every request and sees that added latency every time. What directly accounts for the difference?",
+          options: ["The first pipeline caches completed responses, so later calls return identical output without generating it", "The reused schema is small enough to validate inline, while each generated schema is too large and must be compiled remotely", "The API caches the grammar compiled from an identical schema, but each newly generated schema requires its own grammar compilation", "Structured outputs are applied after generation on the first call and during generation on later calls", "The generated schemas invalidate the prompt cache, so the added latency is from reprocessing the prompt prefix"],
           answer: 2,
-          explanation: "The API compiles your schema into a grammar before it can constrain output, and that compilation adds latency on the first call for a given schema. Steady traffic on a stable schema pays the cost once, while a workload that changes schemas constantly pays it repeatedly. That is separate from the other standing cost of the feature, the injected format description that raises the input token count on every call.",
+          explanation: "Before it can constrain output, the API compiles a schema into a grammar. Later calls that use that same schema can reuse the cached grammar, avoiding the compilation delay; a different schema has no matching cached grammar, so it must be compiled again. This is separate from the feature's standing cost: the injected format description raises input tokens on every call.",
           docsNote: "Doc detail named in the modules: compiled grammars are cached for 24 hours from last use. Confirm the current window and the exact output configuration parameter shape against the documentation before shipping.",
           references: [
             { type: "local", href: "module-2.html#system-prompts-xml-few-shot-and-output-constraints", label: "Module 2 — System prompts, XML, few-shot, and output constraints" }
@@ -3359,6 +3379,7 @@
       let questionMapFilter = 'overview';
       let questionMapWidth = 280;
       let questionMapFilterHeight = 220;
+      let resultsFilter = 'all';
 
       function buildPool() {
         let pool = ITEM_BANK.slice();
@@ -3593,6 +3614,7 @@
 
         questionMapOpen = false;
         questionMapFilter = 'overview';
+        resultsFilter = 'all';
 
         const startedAt = Date.now();
         const studySeconds = config.clock === 'timed' ? pool.length * 120 : 0;
@@ -4022,6 +4044,7 @@
       function renderExam() {
         const a = state.attempt;
         const item = a.pool[a.index];
+        const isExamForm = config.form === 'examForm';
         const domain = DOMAINS.find((d) => d.id === item.domain);
         const selected = a.answers[a.index];
         const manualMode = config.feedback === 'perItem';
@@ -4043,11 +4066,11 @@
         const answeredCount = a.answers.filter((answer) => answer !== null).length;
         const flaggedCount = a.flagged.filter(Boolean).length;
         const availableDomains = DOMAINS.filter((candidate) => a.pool.some((poolItem) => poolItem.domain === candidate.id));
-        const currentFilter = questionMapFilter === 'flagged' || questionMapFilter === 'overview' || availableDomains.some((candidate) => candidate.id === questionMapFilter)
+        const currentFilter = questionMapFilter === 'flagged' || questionMapFilter === 'overview' || (!isExamForm && availableDomains.some((candidate) => candidate.id === questionMapFilter))
           ? questionMapFilter
           : 'overview';
         const visibleQuestionIndexes = a.pool.reduce((indexes, poolItem, idx) => {
-          if (currentFilter === 'overview' || (currentFilter === 'flagged' && a.flagged[idx]) || poolItem.domain === currentFilter) indexes.push(idx);
+          if (currentFilter === 'overview' || (currentFilter === 'flagged' && a.flagged[idx]) || (!isExamForm && poolItem.domain === currentFilter)) indexes.push(idx);
           return indexes;
         }, []);
         const currentFilterLabel = (() => {
@@ -4058,14 +4081,14 @@
         const navigatorFilters = [
           { id: 'overview', label: 'Overview', count: a.pool.length },
           { id: 'flagged', label: 'Flagged', count: flaggedCount },
-          ...availableDomains.map((candidate) => ({
+          ...(!isExamForm ? availableDomains.map((candidate) => ({
             id: candidate.id,
             label: candidate.code,
             count: a.pool.filter((poolItem) => poolItem.domain === candidate.id).length
-          }))
+          })) : [])
         ];
         const questionNavigatorMarkup = `
-          <aside class="exam-navigator ${questionMapOpen ? 'is-open' : ''}" id="examNavigator" aria-label="Exam navigator" style="--filter-height:${questionMapFilterHeight}px">
+          <aside class="exam-navigator ${questionMapOpen ? 'is-open' : ''}" id="examNavigator" aria-label="Exam navigator" style="--filter-height:${isExamForm ? 96 : questionMapFilterHeight}px">
             <div class="exam-navigator-head">
               <div>
                 <p class="exam-navigator-kicker">Exam navigator</p>
@@ -4073,9 +4096,9 @@
               </div>
               <button id="questionMapClose" class="exam-navigator-close" type="button" aria-label="Close question map">&times;</button>
             </div>
-            <div class="exam-filter-list" role="tablist" aria-label="Filter questions">
+            <div class="exam-filter-list ${isExamForm ? 'is-compact' : ''}" role="tablist" aria-label="Filter questions">
               ${navigatorFilters.map((filter) => `<button type="button" class="exam-filter ${currentFilter === filter.id ? 'active' : ''}" data-map-filter="${filter.id}" role="tab" aria-selected="${currentFilter === filter.id}"><span>${filter.label}</span><span class="exam-filter-count">${filter.count}</span></button>`).join('')}
-              <div id="filterResizeHandle" class="exam-filter-resize-handle" role="separator" aria-label="Resize question filters" aria-orientation="horizontal" aria-valuemin="120" aria-valuenow="${questionMapFilterHeight}" tabindex="0"></div>
+              ${!isExamForm ? `<div id="filterResizeHandle" class="exam-filter-resize-handle" role="separator" aria-label="Resize question filters" aria-orientation="horizontal" aria-valuemin="120" aria-valuenow="${questionMapFilterHeight}" tabindex="0"></div>` : ''}
             </div>
             <div class="exam-navigator-summary">
               <span>${currentFilterLabel}</span>
@@ -4115,10 +4138,10 @@
               <span class="exam-watermark" aria-hidden="true">Q${String(a.index + 1).padStart(2, '0')}</span>
               <div class="exam-card-meta">
                 <span class="exam-count">Question ${a.index + 1} of ${a.pool.length}</span>
-                <span class="exam-domain">${domain.name}</span>
+                ${!isExamForm ? `<span class="exam-domain">${domain.name}</span>` : ''}
               </div>
 
-              ${renderScenarioMarkup(item)}
+              ${!isExamForm ? renderScenarioMarkup(item) : ''}
               <h2 id="questionHeading" class="question-text" tabindex="-1">${item.question}</h2>
 
               <section role="region" aria-label="Answer options">
@@ -4377,7 +4400,26 @@
           `;
         }).join('');
 
-        const reviewMarkup = reviewed.map(({ item, idx, selected }) => {
+        const resultFilters = [
+          { id: 'all', label: 'All items' },
+          { id: 'flagged', label: 'Flagged' },
+          { id: 'wrong', label: 'Wrong answers' },
+          { id: 'right', label: 'Right answers' }
+        ];
+        const currentResultsFilter = resultFilters.some((filter) => filter.id === resultsFilter) ? resultsFilter : 'all';
+        const visibleReviewed = reviewed.filter(({ item, idx, selected }) => {
+          if (currentResultsFilter === 'flagged') return Boolean(a.flagged?.[idx]);
+          if (currentResultsFilter === 'wrong') return selected !== null && selected !== item.answer;
+          if (currentResultsFilter === 'right') return selected === item.answer;
+          return true;
+        });
+        const filterCount = (filter) => reviewed.filter(({ item, idx, selected }) => {
+          if (filter.id === 'flagged') return Boolean(a.flagged?.[idx]);
+          if (filter.id === 'wrong') return selected !== null && selected !== item.answer;
+          if (filter.id === 'right') return selected === item.answer;
+          return true;
+        }).length;
+        const reviewMarkup = visibleReviewed.map(({ item, idx, selected }) => {
           const domain = DOMAINS.find((d) => d.id === item.domain);
           const isCorrect = selected === item.answer;
           const selectedText = selected === null ? 'Unanswered' : `${String.fromCodePoint(65 + selected)}) ${item.options[selected]}`;
@@ -4424,7 +4466,10 @@
 
           <section class="section" role="region" aria-label="Item-by-item review">
             <h2 id="reviewHeading" class="section-label">Item-by-item review</h2>
-            ${reviewMarkup}
+            <div class="results-filter" role="tablist" aria-label="Filter review items">
+              ${resultFilters.map((filter) => `<button type="button" data-results-filter="${filter.id}" role="tab" aria-selected="${currentResultsFilter === filter.id}">${filter.label} (${filterCount(filter)})</button>`).join('')}
+            </div>
+            ${reviewMarkup || '<p class="review-filter-empty">No items match this filter.</p>'}
           </section>
         `;
 
@@ -4445,6 +4490,13 @@
 
         document.getElementById('exportPdfBtn').addEventListener('click', () => {
           exportResultsToPdf(reviewed, correctCount, total, points, pct, byDomain, passed);
+        });
+
+        app.querySelectorAll('[data-results-filter]').forEach((button) => {
+          button.addEventListener('click', () => {
+            resultsFilter = button.dataset.resultsFilter;
+            renderResults();
+          });
         });
 
         document.getElementById('resultsHeading').focus();
